@@ -163,226 +163,99 @@ import mongoose from 'mongoose';
 const updatePsychology = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid psychology ID.' });
     }
-    
+
     // Find psychology
     const psychology = await Psychology.findById(id);
     if (!psychology) {
       return res.status(404).json({ error: 'Psychology not found.' });
     }
-    
-    // Get the current key to validate type-specific fields
-    const key = psychology.key;
-    
-    // Handle FormData request
-    let plans, isActive, coverImageUrl, fileUrl, videoUrl, contentUrl, translations;
-    
-    if (req.files && (req.files.coverImage || req.files.file)) {
-      // FormData with file upload
-      
-      // Parse plans from FormData (handle both single value, array, and multiple entries like plans[])
-      if (req.body.plans !== undefined) {
-        if (Array.isArray(req.body.plans)) {
-          // Handle multiple plans[] entries or already formed array
-          plans = req.body.plans.filter(p => p !== ''); // Remove empty values
-        } else {
-          // Handle single plan value
-          plans = [req.body.plans].filter(p => p !== ''); // Remove empty values
-        }
+
+    console.log('Found psychology:', psychology);
+
+    // Extract incoming data
+    const {
+      contentUrl,
+      coverImageUrl,
+      videoUrl,
+      key,
+      isFree,
+      plans,
+      title, // expecting { en: 'Updated Psychology Book', ... }
+    } = req.body;
+
+    // Keep existing fileUrl unless replaced
+    let fileUrl = psychology.fileUrl;
+
+    // Handle file upload for books
+    if (req.files && req.files.file && (psychology.key === 'book' || key === 'book')) {
+      const file = req.files.file[0];
+      if (!file.mimetype || file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ error: 'Only PDF files are allowed for books' });
       }
-      
-      // Parse isActive if provided
-      if (req.body.isActive !== undefined) {
-        isActive = req.body.isActive === 'true' || req.body.isActive === true;
+      try {
+        fileUrl = await uploadFile(file, 'psychology/books');
+      } catch (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        return res.status(400).json({ error: 'Failed to upload PDF file' });
       }
-      
-      // Parse contentUrl if provided
-      contentUrl = req.body.contentUrl;
-      
-      // Parse videoUrl if provided
-      if (key === 'video' && req.body.videoUrl) {
-        videoUrl = req.body.videoUrl;
-      } else if (key === 'video' && !req.body.videoUrl && !videoUrl) {
-        // If updating a video type but no videoUrl is provided
-        return res.status(400).json({ error: 'Video URL is required for video type' });
+    }
+
+    // Handle cover image upload
+    let finalCoverImageUrl = coverImageUrl || psychology.coverImageUrl;
+    if (req.files && req.files.coverImage) {
+      try {
+        finalCoverImageUrl = await uploadImage(req.files.coverImage[0], 'psychology');
+      } catch (uploadError) {
+        console.error('Error uploading cover image:', uploadError);
+        return res.status(400).json({ error: 'Failed to upload cover image' });
       }
-      
-      // Parse translations from FormData
-      if (req.body.translations) {
-        if (typeof req.body.translations === 'string') {
-          try {
-            // If it's a JSON string, parse it
-            translations = JSON.parse(req.body.translations);
-          } catch (e) {
-            // If it's not a JSON string, it might be individual translation fields
-            translations = [];
-            // Look for translation fields like translations[0], translations[1], etc.
-            Object.keys(req.body).forEach(key => {
-              if (key.startsWith('translations[')) {
-                try {
-                  const translation = JSON.parse(req.body[key]);
-                  translations.push(translation);
-                } catch (e) {
-                  // Ignore invalid translation strings
-                }
-              }
-            });
-          }
-        } else {
-          translations = req.body.translations;
-        }
-      }
-      
-      // Handle cover image upload
-      if (req.files.coverImage) {
-        const coverImageFile = req.files.coverImage[0];
-        try {
-          coverImageUrl = await uploadImage(coverImageFile, 'psychology');
-        } catch (uploadError) {
-          console.error('Error uploading cover image:', uploadError);
-          return res.status(400).json({ error: 'Failed to upload cover image' });
-        }
-      }
-      
-      // Handle file upload for books
-      if (req.files.file && key === 'book') {
-        const file = req.files.file[0];
-        
-        // Validate file type is PDF
-        if (!file.mimetype || file.mimetype !== 'application/pdf') {
-          return res.status(400).json({ error: 'Only PDF files are allowed for books' });
-        }
-        
-        try {
-          fileUrl = await uploadFile(file, 'psychology/books');
-        } catch (uploadError) {
-          console.error('Error uploading file:', uploadError);
-          return res.status(400).json({ error: 'Failed to upload PDF file' });
-        }
-      } else if (req.files.file && key !== 'book') {
-        // If file is uploaded but content type is not book
-        return res.status(400).json({ error: 'Files can only be uploaded for book type' });
-      }
+    }
+
+    // Update fields safely
+    psychology.key = key || psychology.key;
+    psychology.isFree = isFree !== undefined ? isFree : psychology.isFree;
+    psychology.plans = Array.isArray(plans) && plans.length ? plans : psychology.plans;
+    psychology.contentUrl = contentUrl || psychology.contentUrl;
+    psychology.videoUrl = videoUrl || psychology.videoUrl;
+    psychology.coverImageUrl = finalCoverImageUrl;
+    psychology.fileUrl = fileUrl; // keep old if not replaced
+
+    // Auto-update paid flags based on isFree
+    if (psychology.isFree === false) {
+      psychology.isPaid = true;
+      psychology.isInSubscription = true;
     } else {
-      // Regular JSON request
-      ({ plans, isActive, contentUrl, coverImageUrl, fileUrl, videoUrl, translations } = req.body);
-      
-      // Validate contentUrl if provided
-      if (contentUrl) {
-        const urlValidation = validateContentUrl(contentUrl);
-        if (!urlValidation.valid) {
-          return res.status(400).json({ error: urlValidation.error });
-        }
-      }
-      
-      // Handle cover image upload if provided as base64
-      if (coverImageUrl && coverImageUrl.startsWith('data:image')) {
-        try {
-          coverImageUrl = await uploadImage(coverImageUrl, 'psychology');
-        } catch (uploadError) {
-          console.error('Error uploading cover image:', uploadError);
-          return res.status(400).json({ error: 'Failed to upload cover image' });
-        }
-      }
-      
-      // Handle file upload if provided as base64 (though typically files come through multipart)
-      if (fileUrl && key === 'book') {
-        // This would be for cases where file is provided as URL
-        // We might want to validate this is a PDF if it's a URL
-      }
+      psychology.isPaid = false;
+      psychology.isInSubscription = false;
     }
-    
-    // Store old plans to handle unlinking
-    const oldPlans = [...psychology.plans];
-    
-    // Update psychology fields
-    if (key !== undefined) psychology.key = key; // Keep the original key
-    if (plans !== undefined) {
-      if (!Array.isArray(plans) || plans.length === 0) {
-        return res.status(400).json({ error: 'Plans array is required and cannot be empty.' });
-      }
-      psychology.plans = plans;
+
+    // Generate slug from English title if provided
+    if (title && title.en) {
+      psychology.slug = generateSlug(title.en);
     }
-    if (isActive !== undefined) psychology.isActive = isActive;
-    if (contentUrl !== undefined) psychology.contentUrl = contentUrl;
-    if (coverImageUrl !== undefined) psychology.coverImageUrl = coverImageUrl;
-    if (fileUrl !== undefined) psychology.fileUrl = fileUrl;
-    if (videoUrl !== undefined) psychology.videoUrl = videoUrl;
-    
-    // Generate slug from English title if translations are being updated
-    if (translations && Array.isArray(translations)) {
-      const enTranslation = translations.find(t => t.language === 'en');
-      if (enTranslation && enTranslation.title) {
-        psychology.slug = generateSlug(enTranslation.title);
-      }
-    }
-    
+
+    console.log('Psychology before save:', psychology);
+
     await psychology.save();
-    
-    // Handle plan linking/unlinking if plans were updated
-    if (plans !== undefined) {
-      // Unlink psychology from old plans that are no longer associated
-      for (const oldPlanId of oldPlans) {
-        if (!plans.includes(oldPlanId)) {
-          const oldPlan = await Plan.findById(oldPlanId);
-          if (oldPlan) {
-            // Remove psychology ID from allowedContent.psychology
-            oldPlan.allowedContent.psychology = oldPlan.allowedContent.psychology.filter(
-              psychologyId => !psychologyId.equals(psychology._id)
-            );
-            await oldPlan.save();
-          }
-        }
-      }
-      
-      // Link psychology to new plans
-      for (const planId of plans) {
-        const plan = await Plan.findById(planId);
-        if (plan) {
-          // Add psychology ID to allowedContent.psychology if not already present
-          if (!plan.allowedContent.psychology.some(psychologyId => psychologyId.equals(psychology._id))) {
-            plan.allowedContent.psychology.push(psychology._id);
-            await plan.save();
-          }
-        }
-      }
-    }
-    
-    // Update translations if provided
-    if (translations && Array.isArray(translations)) {
-      for (const translation of translations) {
-        await createOrUpdateTranslation(
-          'psychology',
-          psychology._id,
-          translation.language,
-          translation.title,
-          translation.description,
-          translation.content
-        );
-      }
-    }
-    
-    // Fetch updated translations
-    const updatedTranslations = await getTranslationsByEntity('psychology', psychology._id);
-    
-// Payment flags are determined by the Plan system, not stored in Psychology model
-    
-    // Return admin response with full data
-    const response = formatAdminResponse(psychology, updatedTranslations);
-    
+
+    console.log('Psychology updated successfully in DB.');
+
     res.status(200).json({
       message: 'Psychology updated successfully.',
-      psychology: response
+      psychology
     });
   } catch (error) {
     console.error('Error updating psychology:', error);
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
+
+
 
 const deletePsychology = async (req, res) => {
   try {
