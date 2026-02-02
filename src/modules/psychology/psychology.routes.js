@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate } from '../../middlewares/rbac.middleware.js';
+import optionalAuthenticate, { authenticate } from '../../middlewares/rbac.middleware.js';
 import { checkPermission } from '../../middlewares/rbac.middleware.js';
 import { detectLanguage } from '../../middlewares/lang.middleware.js';
 import { requirePlan } from '../../middlewares/subscription.middleware.js';

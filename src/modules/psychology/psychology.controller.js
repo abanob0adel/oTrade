@@ -443,69 +443,97 @@ const getAllPsychology = async (req, res) => {
   }
 };
 
-export default getAllPsychology;
-
 
 const getPsychologyById = async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Validate ObjectId
+    const rawId = req.params.id;
+    const id = rawId?.trim();
+    console.log('[DEBUG] rawId:', rawId);
+    console.log('[DEBUG] trimmed id:', id);
+
+    // 🛑 ID not sent
+    if (!id || id === ':id') {
+      console.log('[ERROR] Psychology ID not provided.');
+      return res.status(400).json({
+        error: 'Psychology ID not provided.'
+      });
+    }
+
+    // 🛑 Invalid ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: 'Invalid psychology ID.' });
+      console.log('[ERROR] Invalid ObjectId:', id);
+      return res.status(400).json({
+        error: 'Invalid psychology ID.',
+        receivedId: id
+      });
     }
-    
-    // Get requested language from Accept-Language header, default to 'en'
+
     const requestedLang = req.get('Accept-Language') || 'en';
-    
-    const psychology = await Psychology.findById(id);
+    console.log('[DEBUG] requestedLang:', requestedLang);
+
+    // 🔹 البحث بدون أي شروط إضافية
+    const psychology = await Psychology.findOne({ _id: id });
+    console.log('[DEBUG] psychology found:', psychology);
+
     if (!psychology) {
-      return res.status(404).json({ error: 'Psychology not found.' });
+      console.log('[ERROR] Psychology not found for id:', id);
+      return res.status(404).json({
+        error: 'Psychology not found.'
+      });
     }
-    
-    // Check if psychology is active
-    if (!psychology.isActive) {
-      return res.status(404).json({ error: 'Psychology not found.' });
-    }
-    
-    // Get translations for the psychology
-    const translations = await getTranslationsByEntity('psychology', psychology._id);
-    
-    // Determine if user is admin (from JWT via middleware)
-    const isAdmin = req.userType === 'admin' && req.role === 'admin';
-    const isSuperAdmin = req.userType === 'admin' && req.role === 'super_admin';
-    const isAdminUser = isAdmin || isSuperAdmin;
-    
-    // Get user plans from user object if it exists (regular user)
-    // Use the new subscribedPlans field, fallback to legacy subscriptionPlan
-    const userPlans = req.user && req.user.subscribedPlans ? req.user.subscribedPlans : [];
-    
-    // Use formatPsychologyContentResponse with Plan-based access control
+
+    const translations = await getTranslationsByEntity(
+      'psychology',
+      psychology._id
+    );
+    console.log('[DEBUG] translations:', translations);
+
+    const isAdmin =
+      req.userType === 'admin' &&
+      (req.role === 'admin' || req.role === 'super_admin');
+    console.log('[DEBUG] isAdmin:', isAdmin);
+
+    const userPlans =
+      req.user?.subscribedPlans?.map(p => p.toString()) || [];
+    console.log('[DEBUG] userPlans:', userPlans);
+
     const content = await formatPsychologyContentResponse(
       psychology,
       translations,
-      requestedLang, // Use requested language from header instead of req.lang
+      requestedLang,
       userPlans,
-      isAdminUser
+      isAdmin
     );
-    
-    // Add additional fields
+    console.log('[DEBUG] formatted content:', content);
+
+    // 📎 Attach assets safely
     if (psychology.coverImageUrl) content.coverImageUrl = psychology.coverImageUrl;
     if (psychology.contentUrl) content.contentUrl = psychology.contentUrl;
     if (psychology.fileUrl) content.fileUrl = psychology.fileUrl;
     if (psychology.videoUrl) content.videoUrl = psychology.videoUrl;
     if (psychology.key) content.key = psychology.key;
-    
-    // Add admin plans if admin
-    if (isAdminUser && psychology.plans) content.plans = psychology.plans;
-    
-    res.status(200).json({
+
+    // 👑 Admin-only fields
+    if (isAdmin && psychology.plans) {
+      content.plans = psychology.plans;
+    }
+
+    console.log('[DEBUG] final response content:', content);
+
+    return res.status(200).json({
       psychology: content
     });
   } catch (error) {
-    console.error('Error fetching psychology:', error);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error('[ERROR] Error fetching psychology:', error);
+    return res.status(500).json({
+      error: 'Internal server error.'
+    });
   }
 };
+
+
+
+
+
 
 export { createPsychology, updatePsychology, deletePsychology, getAllPsychology, getPsychologyById };
