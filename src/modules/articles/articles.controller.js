@@ -46,10 +46,7 @@ const createArticle = async (req, res) => {
     console.log('================================\n');
 
     // ===== Basic Fields =====
-    const title = req.body.title?.trim();
-    if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
-    }
+    // Title will be taken from translations
 
     const isFree = true; // All articles are free by default
     const isActive = req.body.isActive !== undefined ? 
@@ -90,7 +87,7 @@ const createArticle = async (req, res) => {
     }
 
     // ===== Translations =====
-    const titles = req.body.titleTranslations || {};
+    const titles = req.body.title || {};
     const descriptions = req.body.description || {};
     const contents = req.body.content || {};
 
@@ -105,7 +102,14 @@ const createArticle = async (req, res) => {
       return res.status(400).json({ error: validation.error });
 
     const { en, ar } = validation.data;
-    const slug = en?.title ? generateSlug(en.title) : generateSlug(title);
+    
+    // Use English title as main title, fallback to Arabic if no English
+    const mainTitle = en?.title || ar?.title;
+    if (!mainTitle) {
+      return res.status(400).json({ error: 'Title is required in at least one language' });
+    }
+    
+    const slug = generateSlug(mainTitle);
 
     // ===== Payment flags =====
     let isPaid = false;
@@ -129,7 +133,7 @@ const createArticle = async (req, res) => {
 
     // ===== Create Article =====
     const article = new Article({
-      title,
+      title: mainTitle,
       isFree,
       plans: isFree ? [] : plans,
       contentUrl,
@@ -180,7 +184,6 @@ const updateArticle = async (req, res) => {
     }
     
     const {
-      title,
       isActive,
       contentUrl,
       coverImageUrl,
@@ -204,10 +207,7 @@ const updateArticle = async (req, res) => {
     }
 
     // 📌 Update fields safely
-    if (title?.trim()) {
-      article.title = title.trim();
-      article.slug = generateSlug(article.title);
-    }
+    // Title will be updated through translations
 
     article.isFree = true; // 🔥 articles are always free
 
@@ -253,7 +253,7 @@ const updateArticle = async (req, res) => {
       }
     } else {
       // Handle individual translation fields format
-      const titles = req.body.titleTranslations || {};
+      const titles = req.body.title || {};
       const descriptions = req.body.description || {};
       const contents = req.body.content || {};
       
@@ -288,6 +288,16 @@ const updateArticle = async (req, res) => {
             translation.description,
             translation.content
           );
+        }
+        
+        // Update article title and slug if English title is provided
+        if (titles.en) {
+          article.title = titles.en;
+          article.slug = generateSlug(titles.en);
+        } else if (titles.ar && !article.title) {
+          // Fallback to Arabic title if no English and no existing title
+          article.title = titles.ar;
+          article.slug = generateSlug(titles.ar);
         }
       }
     }
