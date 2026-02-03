@@ -16,4 +16,4 @@ router.delete('/:id', authenticate(['admin', 'super_admin']), checkPermission('a
 router.get('/', detectLanguage, getAllArticles);
 router.get('/:id', detectLanguage, getArticleById);
 
-export default router;
+export default router; 
