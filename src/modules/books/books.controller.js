@@ -47,10 +47,7 @@ const createBook = async (req, res) => {
     console.log('================================\n');
 
     // ===== Basic Fields =====
-    const title = req.body.title?.trim();
-    if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
-    }
+    // Title will be taken from translations
 
     const isFree = true; // All books are free by default
     const isActive = req.body.isActive !== undefined ? 
@@ -91,7 +88,7 @@ const createBook = async (req, res) => {
     }
 
     // ===== Translations =====
-    const titles = req.body.titleTranslations || {};
+    const titles = req.body.title || {};
     const descriptions = req.body.description || {};
     const contents = req.body.content || {};
 
@@ -106,7 +103,14 @@ const createBook = async (req, res) => {
       return res.status(400).json({ error: validation.error });
 
     const { en, ar } = validation.data;
-    const slug = en?.title ? generateSlug(en.title) : generateSlug(title);
+    
+    // Use English title as main title, fallback to Arabic if no English
+    const mainTitle = en?.title || ar?.title;
+    if (!mainTitle) {
+      return res.status(400).json({ error: 'Title is required in at least one language' });
+    }
+    
+    const slug = generateSlug(mainTitle);
 
     // ===== Payment flags =====
     let isPaid = false;
@@ -130,7 +134,7 @@ const createBook = async (req, res) => {
 
     // ===== Create Book =====
     const book = new Book({
-      title,
+      title: mainTitle,
       isFree,
       plans: isFree ? [] : plans,
       contentUrl,
@@ -183,7 +187,6 @@ const updateBook = async (req, res) => {
     }
 
     const {
-      title,
       isActive,
       contentUrl,
       coverImageUrl,
@@ -207,10 +210,7 @@ const updateBook = async (req, res) => {
     }
 
     // 📌 Update fields safely
-    if (title?.trim()) {
-      book.title = title.trim();
-      book.slug = generateSlug(book.title);
-    }
+    // Title will be updated through translations
 
     book.isFree = true; // 🔥 books are always free
 
@@ -256,7 +256,7 @@ const updateBook = async (req, res) => {
       }
     } else {
       // Handle individual translation fields format
-      const titles = req.body.titleTranslations || {};
+      const titles = req.body.title || {};
       const descriptions = req.body.description || {};
       const contents = req.body.content || {};
       
@@ -291,6 +291,16 @@ const updateBook = async (req, res) => {
             translation.description,
             translation.content
           );
+        }
+        
+        // Update book title and slug if English title is provided
+        if (titles.en) {
+          book.title = titles.en;
+          book.slug = generateSlug(titles.en);
+        } else if (titles.ar && !book.title) {
+          // Fallback to Arabic title if no English and no existing title
+          book.title = titles.ar;
+          book.slug = generateSlug(titles.ar);
         }
       }
     }
