@@ -60,7 +60,8 @@ const planSchema = new mongoose.Schema({
   allowedContent: {
     courses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
     psychology: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Psychology' }],
-    webinars: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Webinar' }]
+    webinars: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Webinar' }],
+    books: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Book' }]
   },
   // NEW FIELDS: durationType and features
   durationType: {

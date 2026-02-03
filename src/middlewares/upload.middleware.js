@@ -69,4 +69,8 @@ export const uploadPsychology = uploadMixed.fields([
   { name: 'coverImage', maxCount: 1 },
   { name: 'file', maxCount: 1 }  // For PDF uploads in psychology module
 ]);
+export const uploadBooks = uploadMixed.fields([
+  { name: 'coverImage', maxCount: 1 },
+  { name: 'file', maxCount: 1 }  // For PDF uploads in books module
+]);
 export const uploadAny = upload.none(); // For requests without files
