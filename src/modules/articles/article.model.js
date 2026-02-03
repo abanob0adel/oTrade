@@ -1,21 +1,21 @@
 import mongoose from 'mongoose';
 
-const bookSchema = new mongoose.Schema({
+const articleSchema = new mongoose.Schema({
   // ===== Free / Paid =====
   isFree: {
     type: Boolean,
-    default: true // All books are free
+    default: true // All articles are free
   },
 
   plans: {
     type: [String],
-    default: [] // All books are free, so no plans needed
+    default: [] // All articles are free, so no plans needed
   },
 
   // ===== Content =====
   title: {
     type: String,
-  
+    required: true,
     index: true
   },
 
@@ -34,12 +34,12 @@ const bookSchema = new mongoose.Schema({
   // ===== Computed Fields =====
   isPaid: {
     type: Boolean,
-    default: false // All books are free
+    default: false // All articles are free
   },
 
   isInSubscription: {
     type: Boolean,
-    default: false // All books are free
+    default: false // All articles are free
   },
 
   slug: {
@@ -49,6 +49,6 @@ const bookSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-const Book = mongoose.model('Book', bookSchema);
+const Article = mongoose.model('Article', articleSchema);
 
-export default Book;
+export default Article;

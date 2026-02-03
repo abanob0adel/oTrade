@@ -164,20 +164,15 @@ const updatePsychology = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid psychology ID.' });
     }
 
-    // Find psychology
     const psychology = await Psychology.findById(id);
     if (!psychology) {
       return res.status(404).json({ error: 'Psychology not found.' });
     }
 
-    console.log('Found psychology:', psychology);
-
-    // Extract incoming data
     const {
       contentUrl,
       coverImageUrl,
@@ -185,75 +180,129 @@ const updatePsychology = async (req, res) => {
       key,
       isFree,
       plans,
-      title, // expecting { en: 'Updated Psychology Book', ... }
+      translations // 🔥 ده كان ناقص
     } = req.body;
 
-    // Keep existing fileUrl unless replaced
+    /* ================= FILE ================= */
     let fileUrl = psychology.fileUrl;
 
-    // Handle file upload for books
-    if (req.files && req.files.file && (psychology.key === 'book' || key === 'book')) {
+    if (req.files?.file && (psychology.key === 'book' || key === 'book')) {
       const file = req.files.file[0];
-      if (!file.mimetype || file.mimetype !== 'application/pdf') {
-        return res.status(400).json({ error: 'Only PDF files are allowed for books' });
+      if (file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ error: 'Only PDF files are allowed' });
       }
-      try {
-        fileUrl = await uploadFile(file, 'psychology/books');
-      } catch (uploadError) {
-        console.error('Error uploading file:', uploadError);
-        return res.status(400).json({ error: 'Failed to upload PDF file' });
-      }
+      fileUrl = await uploadFile(file, 'psychology/books');
     }
 
-    // Handle cover image upload
+    /* ================= COVER ================= */
     let finalCoverImageUrl = coverImageUrl || psychology.coverImageUrl;
-    if (req.files && req.files.coverImage) {
-      try {
-        finalCoverImageUrl = await uploadImage(req.files.coverImage[0], 'psychology');
-      } catch (uploadError) {
-        console.error('Error uploading cover image:', uploadError);
-        return res.status(400).json({ error: 'Failed to upload cover image' });
-      }
+    if (req.files?.coverImage) {
+      finalCoverImageUrl = await uploadImage(
+        req.files.coverImage[0],
+        'psychology'
+      );
     }
 
-    // Update fields safely
-    psychology.key = key || psychology.key;
-    psychology.isFree = isFree !== undefined ? isFree : psychology.isFree;
+    /* ================= UPDATE ================= */
+    psychology.key = key ?? psychology.key;
+    psychology.isFree = isFree ?? psychology.isFree;
     psychology.plans = Array.isArray(plans) && plans.length ? plans : psychology.plans;
-    psychology.contentUrl = contentUrl || psychology.contentUrl;
-    psychology.videoUrl = videoUrl || psychology.videoUrl;
+    psychology.contentUrl = contentUrl ?? psychology.contentUrl;
+    psychology.videoUrl = videoUrl ?? psychology.videoUrl;
     psychology.coverImageUrl = finalCoverImageUrl;
-    psychology.fileUrl = fileUrl; // keep old if not replaced
+    psychology.fileUrl = fileUrl;
 
-    // Auto-update paid flags based on isFree
-    if (psychology.isFree === false) {
-      psychology.isPaid = true;
-      psychology.isInSubscription = true;
-    } else {
-      psychology.isPaid = false;
-      psychology.isInSubscription = false;
-    }
-
-    // Generate slug from English title if provided
-    if (title && title.en) {
-      psychology.slug = generateSlug(title.en);
-    }
-
-    console.log('Psychology before save:', psychology);
+    /* ================= FLAGS ================= */
+    psychology.isPaid = !psychology.isFree;
+    psychology.isInSubscription = !psychology.isFree;
 
     await psychology.save();
 
-    console.log('Psychology updated successfully in DB.');
+    /* ================= TRANSLATIONS ================= */
+    // Handle translations if provided in array format
+    if (translations) {
+      if (typeof translations === 'string') {
+        try {
+          const parsedTranslations = JSON.parse(translations);
+          if (Array.isArray(parsedTranslations)) {
+            for (const t of parsedTranslations) {
+              await createOrUpdateTranslation(
+                'psychology',
+                psychology._id,
+                t.language,
+                t.title,
+                t.description,
+                t.content
+              );
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing translations:', e);
+        }
+      } else if (Array.isArray(translations)) {
+        for (const t of translations) {
+          await createOrUpdateTranslation(
+            'psychology',
+            psychology._id,
+            t.language,
+            t.title,
+            t.description,
+            t.content
+          );
+        }
+      }
+    } else {
+      // Handle individual translation fields format (title[en], description[en], etc.)
+      const titles = req.body.title || {};
+      const descriptions = req.body.description || {};
+      const contents = req.body.content || {};
+      
+      const translationUpdates = [];
+      
+      if (titles.en || descriptions.en || contents.en) {
+        translationUpdates.push({ 
+          language: 'en', 
+          title: titles.en || '', 
+          description: descriptions.en || '', 
+          content: contents.en || '' 
+        });
+      }
+      
+      if (titles.ar || descriptions.ar || contents.ar) {
+        translationUpdates.push({ 
+          language: 'ar', 
+          title: titles.ar || '', 
+          description: descriptions.ar || '', 
+          content: contents.ar || '' 
+        });
+      }
+      
+      // Update translations if any found
+      if (translationUpdates.length > 0) {
+        for (const translation of translationUpdates) {
+          await createOrUpdateTranslation(
+            'psychology',
+            psychology._id,
+            translation.language,
+            translation.title,
+            translation.description,
+            translation.content
+          );
+        }
+      }
+    }
 
     res.status(200).json({
-      message: 'Psychology updated successfully.',
+      message: 'Psychology updated successfully',
       psychology
     });
+
   } catch (error) {
-    console.error('Error updating psychology:', error);
-    res.status(500).json({ error: 'Internal server error.' });
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 
 
