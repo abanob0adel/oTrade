@@ -16,4 +16,4 @@ router.delete('/:id', authenticate(['admin', 'super_admin']), checkPermission('b
 router.get('/', detectLanguage, getAllBooks);
 router.get('/:id', detectLanguage, getBookById);
 
-export default router;  //kiro
+export default router;  //kiro 

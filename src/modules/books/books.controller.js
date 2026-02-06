@@ -7,6 +7,12 @@ import { formatAdminResponse } from '../../utils/accessControl.js';
 import { uploadImage, uploadFile } from '../../utils/cloudinary.js';
 import { generateSlug } from '../../utils/translationHelper.js';
 import mongoose from 'mongoose';
+import { 
+  ValidationError, 
+  FileUploadError, 
+  TranslationError,
+  createErrorResponse 
+} from './books.errors.js';
 
 // Helper function to check if user has access to a book
 // Helper function to format book content response for free access
@@ -44,10 +50,22 @@ const createBook = async (req, res) => {
     console.log('\n===== CREATE BOOK DEBUG =====');
     console.log('BODY:', req.body);
     console.log('FILES:', req.files);
+    console.log('USER:', req.auth?.id || 'Anonymous');
     console.log('================================\n');
-
-    // ===== Basic Fields =====
-    // Title will be taken from translations
+ 
+    // ===== Validation Phase =====
+    const validationErrors = [];
+    
+    // Validate required fields from translations
+    const inputTitles = req.body.title || {};
+    const hasTitle = inputTitles.en?.trim() || inputTitles.ar?.trim();
+    
+    if (!hasTitle) {
+      validationErrors.push({
+        field: 'title',
+        message: 'Title is required in at least one language (English or Arabic)'
+      });
+    }
 
     const isFree = true; // All books are free by default
     const isActive = req.body.isActive !== undefined ? 
@@ -67,47 +85,62 @@ const createBook = async (req, res) => {
 
     if (contentUrl) {
       const urlValidation = validateContentUrl(contentUrl);
-      if (!urlValidation.valid) return res.status(400).json({ error: urlValidation.error });
+      if (!urlValidation.valid) {
+        validationErrors.push({
+          field: 'contentUrl',
+          message: urlValidation.error
+        });
+      }
+    }
+
+    // Throw validation error if any validation failed
+    if (validationErrors.length > 0) {
+      throw new ValidationError('Validation failed', validationErrors);
     }
 
     // ===== File Uploads =====
-    // Cover Image
-    if (req.files?.coverImage) {
-      coverImageUrl = await uploadImage(req.files.coverImage[0], 'books');
-    } else if (req.body.coverImageUrl?.startsWith('data:image')) {
-      coverImageUrl = await uploadImage(req.body.coverImageUrl, 'books');
-    } else {
-      coverImageUrl = req.body.coverImageUrl || '';
-    }
+    try {
+      // Cover Image
+      if (req.files?.coverImage) {
+        coverImageUrl = await uploadImage(req.files.coverImage[0], 'books');
+      } else if (req.body.coverImageUrl?.startsWith('data:image')) {
+        coverImageUrl = await uploadImage(req.body.coverImageUrl, 'books');
+      } else {
+        coverImageUrl = req.body.coverImageUrl || '';
+      }
 
-    // File Upload
-    if (req.files?.file) {
-      fileUrl = await uploadFile(req.files.file[0], 'books');
-    } else {
-      fileUrl = req.body.fileUrl || '';
+      // File Upload
+      if (req.files?.file) {
+        fileUrl = await uploadFile(req.files.file[0], 'books');
+      } else {
+        fileUrl = req.body.fileUrl || '';
+      }
+    } catch (uploadError) {
+      console.error('File upload error:', uploadError);
+      throw new FileUploadError(`File upload failed: ${uploadError.message}`);
     }
 
     // ===== Translations =====
-    const titles = req.body.title || {};
+    const translationTitles = req.body.title || {};
     const descriptions = req.body.description || {};
     const contents = req.body.content || {};
 
-    if (titles.en || descriptions.en || contents.en)
-      translations.push({ language: 'en', title: titles.en || '', description: descriptions.en || '', content: contents.en || '' });
+    if (translationTitles.en || descriptions.en || contents.en)
+      translations.push({ language: 'en', title: translationTitles.en || '', description: descriptions.en || '', content: contents.en || '' });
 
-    if (titles.ar || descriptions.ar || contents.ar)
-      translations.push({ language: 'ar', title: titles.ar || '', description: descriptions.ar || '', content: contents.ar || '' });
+    if (translationTitles.ar || descriptions.ar || contents.ar)
+      translations.push({ language: 'ar', title: translationTitles.ar || '', description: descriptions.ar || '', content: contents.ar || '' });
 
     const validation = validateTranslationsForCreate(translations);
     if (!validation.valid)
-      return res.status(400).json({ error: validation.error });
+      throw new TranslationError(validation.error);
 
     const { en, ar } = validation.data;
     
     // Use English title as main title, fallback to Arabic if no English
     const mainTitle = en?.title || ar?.title;
     if (!mainTitle) {
-      return res.status(400).json({ error: 'Title is required in at least one language' });
+      throw new ValidationError('Title is required in at least one language');
     }
     
     const slug = generateSlug(mainTitle);
@@ -167,10 +200,23 @@ const createBook = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('CREATE BOOK ERROR:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('CREATE BOOK ERROR:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      user: req.auth?.id || 'Anonymous',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Use global error handler or send custom response
+    const errorResponse = createErrorResponse(error);
+    res.status(error.statusCode || 500).json(errorResponse);
   }
 };
+
+
+
+
 
 const updateBook = async (req, res) => {
   try {
