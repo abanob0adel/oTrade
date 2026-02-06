@@ -35,7 +35,7 @@ const formatBookContentResponse = async (book, translations, requestedLang) => {
     content.description = requestedTranslation.description || '';
     content.content = requestedTranslation.content || '';
   }
-   
+  
   return content;
 };
 
@@ -45,130 +45,98 @@ const createBook = async (req, res) => {
     console.log('BODY:', req.body);
     console.log('FILES:', req.files);
     console.log('================================\n');
-
+ 
     // ===== Basic Fields =====
-    const isFree = true; // all books free
-    const isActive =
-      req.body.isActive !== undefined
-        ? req.body.isActive === true || req.body.isActive === 'true'
-        : true;
+    // Title will be taken from translations
 
-    let contentUrl = req.body.contentUrl?.trim() || '';
-    let videoUrl = req.body.videoUrl?.trim() || '';
-    let pdfUrl = req.body.pdfUrl?.trim() || '';
-    let coverImageUrl = '';
-    let fileUrl = '';
+    const isFree = true; // All books are free by default
+    const isActive = req.body.isActive !== undefined ? 
+      (req.body.isActive === true || req.body.isActive === 'true') : true;
+
+    let contentUrl;
+    let coverImageUrl;
+    let fileUrl;
+    let videoUrl;
+    let pdfUrl;
     let translations = [];
 
-    // ===== Validate URLs =====
+    // ===== Content URLs =====
+    contentUrl = req.body.contentUrl?.trim() || '';
+    videoUrl = req.body.videoUrl?.trim() || '';
+    pdfUrl = req.body.pdfUrl?.trim() || '';
+
     if (contentUrl) {
       const urlValidation = validateContentUrl(contentUrl);
-      if (!urlValidation.valid)
-        return res.status(400).json({ error: urlValidation.error });
+      if (!urlValidation.valid) return res.status(400).json({ error: urlValidation.error });
     }
 
-    if (videoUrl) {
-      const urlValidation = validateContentUrl(videoUrl);
-      if (!urlValidation.valid)
-        return res.status(400).json({ error: urlValidation.error });
+    // ===== File Uploads =====
+    // Cover Image
+    if (req.files?.coverImage) {
+      coverImageUrl = await uploadImage(req.files.coverImage[0], 'books');
+    } else if (req.body.coverImageUrl?.startsWith('data:image')) {
+      coverImageUrl = await uploadImage(req.body.coverImageUrl, 'books');
+    } else {
+      coverImageUrl = req.body.coverImageUrl || '';
     }
 
-    if (pdfUrl) {
-      const urlValidation = validateContentUrl(pdfUrl);
-      if (!urlValidation.valid)
-        return res.status(400).json({ error: urlValidation.error });
-    }
-
-    // ===== Cover Image Upload =====
-    try {
-      if (req.files?.coverImage) {
-        coverImageUrl = await uploadImage(req.files.coverImage[0], 'books');
-      } else if (req.body.coverImageUrl?.startsWith('data:image')) {
-        coverImageUrl = await uploadImage(req.body.coverImageUrl, 'books');
-      } else {
-        coverImageUrl = req.body.coverImageUrl || '';
-      }
-    } catch (err) {
-      console.error('Image upload error:', err);
-      return res.status(500).json({ error: 'Cover upload failed' });
-    }
-
-    // ===== File Upload =====
-    try {
-      if (req.files?.file) {
-        fileUrl = await uploadFile(req.files.file[0], 'books');
-      } else {
-        fileUrl = req.body.fileUrl || '';
-      }
-    } catch (err) {
-      console.error('File upload error:', err);
-      return res.status(500).json({ error: 'File upload failed' });
+    // File Upload
+    if (req.files?.file) {
+      fileUrl = await uploadFile(req.files.file[0], 'books');
+    } else {
+      fileUrl = req.body.fileUrl || '';
     }
 
     // ===== Translations =====
-    const titles =
-      typeof req.body.title === 'object' ? req.body.title : {};
-    const descriptions =
-      typeof req.body.description === 'object' ? req.body.description : {};
-    const contents =
-      typeof req.body.content === 'object' ? req.body.content : {};
+    const titles = req.body.title || {};
+    const descriptions = req.body.description || {};
+    const contents = req.body.content || {};
 
-    if (titles.en || descriptions.en || contents.en) {
-      translations.push({
-        language: 'en',
-        title: titles.en || '',
-        description: descriptions.en || '',
-        content: contents.en || ''
-      });
-    }
+    if (titles.en || descriptions.en || contents.en)
+      translations.push({ language: 'en', title: titles.en || '', description: descriptions.en || '', content: contents.en || '' });
 
-    if (titles.ar || descriptions.ar || contents.ar) {
-      translations.push({
-        language: 'ar',
-        title: titles.ar || '',
-        description: descriptions.ar || '',
-        content: contents.ar || ''
-      });
-    }
+    if (titles.ar || descriptions.ar || contents.ar)
+      translations.push({ language: 'ar', title: titles.ar || '', description: descriptions.ar || '', content: contents.ar || '' });
 
     const validation = validateTranslationsForCreate(translations);
     if (!validation.valid)
       return res.status(400).json({ error: validation.error });
 
     const { en, ar } = validation.data;
-
-    // ===== Main title =====
+    
+    // Use English title as main title, fallback to Arabic if no English
     const mainTitle = en?.title || ar?.title;
     if (!mainTitle) {
-      return res
-        .status(400)
-        .json({ error: 'Title is required in at least one language' });
+      return res.status(400).json({ error: 'Title is required in at least one language' });
     }
+    
+    const slug = generateSlug(mainTitle);
 
-    // ===== Slug generate + duplicate fix =====
-    let slug = generateSlug(mainTitle);
-    const existingSlug = await Book.findOne({ slug });
-    if (existingSlug) slug = slug + '-' + Date.now();
+    // ===== Payment flags =====
+    let isPaid = false;
+    let isInSubscription = false;
 
-    // ===== Prevent empty book =====
-    if (
-      !contentUrl &&
-      !videoUrl &&
-      !pdfUrl &&
-      !fileUrl &&
-      !contents.en &&
-      !contents.ar
-    ) {
-      return res.status(400).json({
-        error: 'Book must contain at least one content source'
-      });
+    if (!isFree) {
+      const plansData = await Plan.find({ _id: { $in: plans } });
+
+      isInSubscription = plansData.some(plan =>
+        plan.subscriptionOptions &&
+        (
+          plan.subscriptionOptions.monthly?.price > 0 ||
+          plan.subscriptionOptions.quarterly?.price > 0 ||
+          plan.subscriptionOptions.semiAnnual?.price > 0 ||
+          plan.subscriptionOptions.yearly?.price > 0
+        )
+      );
+
+      isPaid = plansData.some(plan => plan.price > 0) || isInSubscription;
     }
 
     // ===== Create Book =====
     const book = new Book({
       title: mainTitle,
-      isFree: true,
-      plans: [], // removed plans logic
+      isFree,
+      plans: isFree ? [] : plans,
       contentUrl,
       coverImageUrl,
       fileUrl,
@@ -176,38 +144,21 @@ const createBook = async (req, res) => {
       pdfUrl,
       isActive,
       slug,
-      isPaid: false,
-      isInSubscription: false
+      isPaid,
+      isInSubscription
     });
 
     await book.save();
 
     // ===== Save Translations =====
-    await Promise.all([
-      createOrUpdateTranslation(
-        'books',
-        book._id,
-        'en',
-        en.title,
-        en.description,
-        en.content
-      ),
-      ar.title || ar.description || ar.content
-        ? createOrUpdateTranslation(
-            'books',
-            book._id,
-            'ar',
-            ar.title,
-            ar.description,
-            ar.content
-          )
-        : null
-    ]);
+    await createOrUpdateTranslation('books', book._id, 'en', en.title, en.description, en.content);
+    if (ar.title || ar.description || ar.content) {
+      await createOrUpdateTranslation('books', book._id, 'ar', ar.title, ar.description, ar.content);
+    }
 
-    const createdTranslations = await getTranslationsByEntity(
-      'books',
-      book._id
-    );
+
+
+    const createdTranslations = await getTranslationsByEntity('books', book._id);
     const response = formatAdminResponse(book, createdTranslations);
 
     res.status(201).json({
@@ -220,7 +171,6 @@ const createBook = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 
 
 
