@@ -35,7 +35,7 @@ const formatBookContentResponse = async (book, translations, requestedLang) => {
     content.description = requestedTranslation.description || '';
     content.content = requestedTranslation.content || '';
   }
-  
+   
   return content;
 };
 
