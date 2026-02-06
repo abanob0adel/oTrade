@@ -2,7 +2,6 @@ import express from 'express';
 import connectDB from './config/db.js';
 import 'dotenv/config';
 import cors from 'cors';
-import { globalErrorHandler, notFoundHandler, developmentErrorLogger } from './middlewares/error.middleware.js';
 
 const app = express();
 
@@ -36,7 +35,6 @@ import webinarRoutes from './modules/webinars/webinars.routes.js';
 import psychologyRoutes from './modules/psychology/psychology.routes.js';
 import bookRoutes from './modules/books/books.routes.js';
 import articleRoutes from './modules/articles/articles.routes.js';
-import economicCalendarRoutes from './modules/economic-calendar/economic-calendar.routes.js';
 import analystRoutes from './modules/analysts/analysts.routes.js';
 import supportRoutes from './modules/support/support.routes.js';
 import userRoutes from './modules/users/user.routes.js';
@@ -59,7 +57,6 @@ app.use('/api/webinars', webinarRoutes);
 app.use('/api/psychology', psychologyRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/articles', articleRoutes);
-app.use('/api/economic-calendar', economicCalendarRoutes);
 app.use('/api/analysts', analystRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/user', userRoutes);
@@ -77,17 +74,6 @@ app.use('/api/consultations', consultationRoutes);
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Server is running' });
 });
-
-// 404 handler for undefined routes
-app.use(notFoundHandler);
-
-// Development error logger (only in development)
-if (process.env.NODE_ENV === 'development') {
-  app.use(developmentErrorLogger);
-}
-
-// Global error handler (must be last)
-app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 3000;
 
