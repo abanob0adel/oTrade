@@ -79,35 +79,47 @@ const createBook = async (req, res) => {
         return res.status(400).json({ error: urlValidation.error });
     }
 
-    // ===== Cover Image Upload - BunnyCDN =====
+    // ===== Cover Image Upload - Direct URL or Upload =====
     try {
-      if (req.files?.coverImage) {
-        console.log('📸 Uploading cover image...');
+      if (req.body.coverImageUrl && req.body.coverImageUrl.trim()) {
+        // Frontend uploaded directly, use provided URL
+        coverImageUrl = req.body.coverImageUrl.trim();
+        console.log('✅ Using direct upload cover URL:', coverImageUrl);
+      } else if (req.files?.coverImage) {
+        // Fallback: Backend upload (for backward compatibility)
+        console.log('📸 Uploading cover image from backend...');
         coverImageUrl = await bunnyCDN.uploadBookCover(
           req.files.coverImage[0].buffer,
           req.files.coverImage[0].originalname
         );
         console.log('✅ Cover uploaded:', coverImageUrl);
-      } else {
-        coverImageUrl = req.body.coverImageUrl || '';
       }
     } catch (err) {
-      console.error('❌ Cover image upload error:', err.message);
+      console.error('❌ Cover image error:', err.message);
       return res.status(500).json({ error: `Cover upload failed: ${err.message}` });
     }
 
-    // ===== File Upload - BunnyCDN =====
-    try {
-      if (req.files?.file) {
-        console.log('📄 Uploading PDF file...');
+    // ===== File Upload - Direct URL or Upload =====
+    try { 
+      if (req.body.fileUrl && req.body.fileUrl.trim()) {
+        // Frontend uploaded directly, use provided URL
+        fileUrl = req.body.fileUrl.trim();
+        pdfUrl = fileUrl;
+        console.log('✅ Using direct upload file URL:', fileUrl);
+      } else if (req.body.pdfUrl && req.body.pdfUrl.trim()) {
+        // Alternative: pdfUrl field
+        pdfUrl = req.body.pdfUrl.trim();
+        fileUrl = pdfUrl;
+        console.log('✅ Using direct upload PDF URL:', pdfUrl);
+      } else if (req.files?.file) {
+        // Fallback: Backend upload (for backward compatibility)
+        console.log('📄 Uploading PDF file from backend...');
         fileUrl = await bunnyCDN.uploadPDF(
           req.files.file[0].buffer,
           req.files.file[0].originalname
         );
-        pdfUrl = fileUrl; // Set pdfUrl as well
+        pdfUrl = fileUrl;
         console.log('✅ PDF uploaded:', fileUrl);
-      } else {
-        fileUrl = req.body.fileUrl || '';
       }
     } catch (err) {
       console.error('❌ PDF upload error:', err.message);

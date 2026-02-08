@@ -1,5 +1,6 @@
 import express from 'express';
 import { 
+  generateUploadUrl,
   uploadBookPDF, 
   uploadImage, 
   uploadVideo,
@@ -12,8 +13,16 @@ import {
   uploadAllMediaFiles
 } from '../middlewares/upload.middleware.js';
 import upload from '../middlewares/upload.middleware.js';
+import { authenticate } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
+
+/**
+ * @route   POST /api/upload/generate-url
+ * @desc    Generate signed upload URL for direct frontend upload to BunnyCDN
+ * @access  Private (Admin only)
+ */
+router.post('/generate-url', authenticate, generateUploadUrl);
 
 /**
  * @route   POST /api/upload/book
