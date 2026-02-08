@@ -47,6 +47,7 @@ import newsRoutes from './modules/news/news.routes.js';
 import contactRoutes from './modules/contacts/contact.routes.js';
 import consultationRoutes from './modules/consultations/consultation.routes.js';
 import paymentRoutes from './modules/payments/payment.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/subscriptions', subscriptionRoutes);
@@ -68,17 +69,18 @@ app.use('/api/partners', partnerRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/consultations', consultationRoutes);
+app.use('/api/upload', uploadRoutes);
 //app.use('/api/payments', paymentRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Server is running' });
 });
-
+  
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-export default app;
+export default app;  

@@ -4,7 +4,7 @@ import Translation from '../translations/translation.model.js';
 import { createOrUpdateTranslation, getTranslationsByEntity } from '../translations/translation.service.js';
 import { validateTranslationsForCreate, validateContentUrl } from '../../utils/translationValidator.js';
 import { formatAdminResponse } from '../../utils/accessControl.js';
-import { uploadImage, uploadFile } from '../../utils/cloudinary.js';
+import bunnyCDN from '../../utils/bunnycdn.js';
 import { generateSlug } from '../../utils/translationHelper.js';
 import mongoose from 'mongoose';
 
@@ -22,7 +22,7 @@ const formatBookContentResponse = async (book, translations, requestedLang) => {
     title: book.title,
     description: '', 
     content: '', 
-    coverImageUrl: book.coverImageUrl || undefined,
+    coverImageUrl: book.coverImageUrl || undefined, 
     fileUrl: book.fileUrl || undefined,
     videoUrl: book.videoUrl || undefined,
     pdfUrl: book.pdfUrl || undefined,
@@ -79,30 +79,39 @@ const createBook = async (req, res) => {
         return res.status(400).json({ error: urlValidation.error });
     }
 
-    // ===== Cover Image Upload =====
+    // ===== Cover Image Upload - BunnyCDN =====
     try {
       if (req.files?.coverImage) {
-        coverImageUrl = await uploadImage(req.files.coverImage[0], 'books');
-      } else if (req.body.coverImageUrl?.startsWith('data:image')) {
-        coverImageUrl = await uploadImage(req.body.coverImageUrl, 'books');
+        console.log('📸 Uploading cover image...');
+        coverImageUrl = await bunnyCDN.uploadBookCover(
+          req.files.coverImage[0].buffer,
+          req.files.coverImage[0].originalname
+        );
+        console.log('✅ Cover uploaded:', coverImageUrl);
       } else {
         coverImageUrl = req.body.coverImageUrl || '';
       }
     } catch (err) {
-      console.error('Image upload error:', err);
-      return res.status(500).json({ error: 'Cover upload failed' });
+      console.error('❌ Cover image upload error:', err.message);
+      return res.status(500).json({ error: `Cover upload failed: ${err.message}` });
     }
 
-    // ===== File Upload =====
+    // ===== File Upload - BunnyCDN =====
     try {
       if (req.files?.file) {
-        fileUrl = await uploadFile(req.files.file[0], 'books');
+        console.log('📄 Uploading PDF file...');
+        fileUrl = await bunnyCDN.uploadPDF(
+          req.files.file[0].buffer,
+          req.files.file[0].originalname
+        );
+        pdfUrl = fileUrl; // Set pdfUrl as well
+        console.log('✅ PDF uploaded:', fileUrl);
       } else {
         fileUrl = req.body.fileUrl || '';
       }
     } catch (err) {
-      console.error('File upload error:', err);
-      return res.status(500).json({ error: 'File upload failed' });
+      console.error('❌ PDF upload error:', err.message);
+      return res.status(500).json({ error: `PDF upload failed: ${err.message}` });
     }
 
     // ===== Translations =====
@@ -248,19 +257,48 @@ const updateBook = async (req, res) => {
       pdfUrl
     } = req.body;
 
-    // 📌 Handle uploads FIRST
+    // 📌 Handle uploads FIRST - BunnyCDN
     if (req.files?.coverImage?.length) {
-      book.coverImageUrl = await uploadImage(
-        req.files.coverImage[0],
-        'books'
+      console.log('📸 Updating cover image...');
+      
+      // Delete old cover if exists
+      if (book.coverImageUrl) {
+        try {
+          console.log('🗑️ Deleting old cover...');
+          await bunnyCDN.deleteFileByUrl(book.coverImageUrl);
+          console.log('✅ Old cover deleted');
+        } catch (err) {
+          console.warn('⚠️ Failed to delete old cover:', err.message);
+        }
+      }
+      
+      book.coverImageUrl = await bunnyCDN.uploadBookCover(
+        req.files.coverImage[0].buffer,
+        req.files.coverImage[0].originalname
       );
+      console.log('✅ New cover uploaded:', book.coverImageUrl);
     }
 
     if (req.files?.file?.length) {
-      book.fileUrl = await uploadFile(
-        req.files.file[0],
-        'books'
+      console.log('📄 Updating PDF file...');
+      
+      // Delete old PDF if exists
+      if (book.fileUrl) {
+        try {
+          console.log('🗑️ Deleting old PDF...');
+          await bunnyCDN.deleteFileByUrl(book.fileUrl);
+          console.log('✅ Old PDF deleted');
+        } catch (err) {
+          console.warn('⚠️ Failed to delete old PDF:', err.message);
+        }
+      }
+      
+      book.fileUrl = await bunnyCDN.uploadPDF(
+        req.files.file[0].buffer,
+        req.files.file[0].originalname
       );
+      book.pdfUrl = book.fileUrl;
+      console.log('✅ New PDF uploaded:', book.fileUrl);
     }
 
     // 📌 Update fields safely
@@ -392,6 +430,39 @@ const deleteBook = async (req, res) => {
       return res.status(404).json({ error: 'Book not found.' });
     }
     
+    console.log(`🗑️ Deleting book: ${book.title}`);
+    
+    // Delete files from BunnyCDN
+    const deletePromises = [];
+    
+    if (book.coverImageUrl) {
+      console.log('🗑️ Deleting cover image from BunnyCDN...');
+      deletePromises.push(
+        bunnyCDN.deleteFileByUrl(book.coverImageUrl)
+          .then(() => console.log('✅ Cover deleted'))
+          .catch(err => console.warn('⚠️ Failed to delete cover:', err.message))
+      );
+    }
+    
+    if (book.fileUrl) {
+      console.log('🗑️ Deleting PDF from BunnyCDN...');
+      deletePromises.push(
+        bunnyCDN.deleteFileByUrl(book.fileUrl)
+          .then(() => console.log('✅ PDF deleted'))
+          .catch(err => console.warn('⚠️ Failed to delete PDF:', err.message))
+      );
+    }
+    
+    if (book.pdfUrl && book.pdfUrl !== book.fileUrl) {
+      deletePromises.push(
+        bunnyCDN.deleteFileByUrl(book.pdfUrl)
+          .catch(err => console.warn('⚠️ Failed to delete PDF:', err.message))
+      );
+    }
+    
+    // Wait for all deletions (non-blocking if they fail)
+    await Promise.allSettled(deletePromises);
+    
     // Delete associated translations
     await Translation.deleteMany({
       entityType: 'books',
@@ -401,11 +472,13 @@ const deleteBook = async (req, res) => {
     // Delete book
     await Book.findByIdAndDelete(id);
     
+    console.log('✅ Book deleted successfully');
+    
     res.status(200).json({
       message: 'Book deleted successfully.'
     });
   } catch (error) {
-    console.error('Error deleting book:', error);
+    console.error('❌ Error deleting book:', error);
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
