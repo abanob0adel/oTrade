@@ -36,19 +36,31 @@ const userSchema = new mongoose.Schema({
   },
   // New field for plan-based subscriptions
   subscribedPlans: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Plan' }],
-  // NEW FIELD: subscription information
+  // Subscription information
   subscription: {
     plan: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan' },
     duration: { type: String, enum: ['monthly', 'yearly'] },
     startDate: Date,
     endDate: Date
-  } 
+  },
+  // Password reset fields
+  resetPasswordToken: {
+    type: String,
+    select: false
+  },
+  resetPasswordExpiry: {
+    type: Date,
+    select: false
+  }
 }, {
   timestamps: true 
 });
 
 // Create index on email for faster lookups
 userSchema.index({ email: 1 });
+
+// Create index on reset token for faster lookups
+userSchema.index({ resetPasswordToken: 1 });
 
 const User = mongoose.model('User', userSchema);
 
