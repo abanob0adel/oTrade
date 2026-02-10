@@ -223,6 +223,33 @@
         "description": "Update all profile fields at once."
       },
       "response": []
+    },
+    {
+      "name": "10. Upload Profile Image",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"profileImage\": \"https://cdn.example.com/profile-images/user123.jpg\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/profile/image",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "profile", "image"]
+        },
+        "description": "Upload profile image URL. Frontend should first upload image to BunnyCDN using /api/upload/generate-url, then send the CDN URL here."
+      },
+      "response": []
     }
   ],
   "variable": [

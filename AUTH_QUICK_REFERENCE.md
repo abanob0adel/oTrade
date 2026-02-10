@@ -10,6 +10,7 @@
 | POST | `/api/auth/reset-password` | ❌ | Reset password with token |
 | GET | `/api/auth/profile` | ✅ | Get user profile |
 | PUT | `/api/auth/profile` | ✅ | Update user profile |
+| POST | `/api/auth/profile/image` | ✅ | Upload profile image |
 
 ---
 
@@ -83,6 +84,18 @@ Authorization: Bearer YOUR_JWT_TOKEN
 }
 ```
 
+### Upload Profile Image
+```json
+POST /api/auth/profile/image
+Authorization: Bearer YOUR_JWT_TOKEN
+
+{
+  "profileImage": "https://cdn.example.com/profile-images/user123.jpg"
+}
+```
+
+> **Note:** Frontend should first upload image to BunnyCDN using `/api/upload/generate-url`, then send the CDN URL here.
+
 ---
 
 ## 📤 Response Format
@@ -96,6 +109,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
     "id": "user_id",
     "name": "User Name",
     "email": "user@example.com",
+    "profileImage": "https://cdn.example.com/profile.jpg",
     "subscriptionPlan": "free"
   }
 }
@@ -108,6 +122,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
     "id": "user_id",
     "name": "User Name",
     "email": "user@example.com",
+    "profileImage": "https://cdn.example.com/profile.jpg",
     "subscriptionPlan": "pro",
     "subscriptionStatus": "active",
     "subscriptionExpiry": "2024-12-31T23:59:59.999Z",
@@ -161,6 +176,29 @@ const response = await axios.get('/api/auth/profile', {
 
 // Update Profile
 await axios.put('/api/auth/profile', updates, {
+  headers: { Authorization: `Bearer ${token}` }
+});
+
+// Upload Profile Image
+// Step 1: Upload image to BunnyCDN
+const uploadResponse = await axios.post('/api/upload/generate-url', {
+  fileName: 'profile.jpg',
+  fileType: 'image',
+  category: 'profiles',
+  fileSize: imageFile.size
+}, {
+  headers: { Authorization: `Bearer ${token}` }
+});
+
+// Step 2: Upload to BunnyCDN
+await axios.put(uploadResponse.data.uploadUrl, imageFile, {
+  headers: uploadResponse.data.headers
+});
+
+// Step 3: Save CDN URL to profile
+await axios.post('/api/auth/profile/image', {
+  profileImage: uploadResponse.data.fileUrl
+}, {
   headers: { Authorization: `Bearer ${token}` }
 });
 ```

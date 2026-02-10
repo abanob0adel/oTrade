@@ -34,7 +34,9 @@ const adminSchema = new mongoose.Schema({
       subscriptions: [String],
       support: [String],
       calendar: [String],
-      strategies: [String]
+      strategies: [String],
+      books: [String],
+      articles: [String]
     }
   ],
   isActive: {

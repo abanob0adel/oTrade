@@ -68,6 +68,7 @@ const register = async (userData) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      profileImage: user.profileImage,
       role: user.role,
       subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus
@@ -115,6 +116,7 @@ const login = async (email, password) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      profileImage: user.profileImage,
       role: user.role,
       subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus,
@@ -227,6 +229,7 @@ const getProfile = async (userId) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      profileImage: user.profileImage,
       role: user.role,
       subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus,
@@ -241,7 +244,7 @@ const getProfile = async (userId) => {
  * ✏️ Update user profile
  */
 const updateProfile = async (userId, updateData) => {
-  const { fullName, name, email, currentPassword, newPassword } = updateData;
+  const { fullName, name, email, currentPassword, newPassword, profileImage } = updateData;
   
   const user = await User.findById(userId);
   if (!user) {
@@ -251,6 +254,11 @@ const updateProfile = async (userId, updateData) => {
   // Update name if provided
   if (fullName || name) {
     user.name = fullName || name;
+  }
+  
+  // Update profile image if provided
+  if (profileImage) {
+    user.profileImage = profileImage;
   }
   
   // Update email if provided
@@ -291,6 +299,7 @@ const updateProfile = async (userId, updateData) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      profileImage: user.profileImage,
       role: user.role,
       subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus

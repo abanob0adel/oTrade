@@ -91,11 +91,40 @@ const updateProfileController = async (req, res) => {
   }
 };
 
+
+/**
+ * 📸 Upload Profile Image Controller
+ * POST /api/auth/profile/image
+ */
+
+
+const uploadProfileImageController = async (req, res) => {
+  try {
+    const userId = req.auth.id;
+    const { profileImage } = req.body;
+    
+    if (!profileImage) {
+      return res.status(400).json({
+        success: false,
+        error: 'Profile image URL is required'
+      });
+    }
+
+
+    const result = await updateProfile(userId, { profileImage });
+    handleResponse(res, 200, result);
+  } catch (error) {
+    handleError(res, 400, error.message);
+  }
+};
+
+
 export { 
   registerController as register, 
   loginController as login,
   forgotPasswordController as forgotPassword,
   resetPasswordController as resetPassword,
   getProfileController as getProfile,
-  updateProfileController as updateProfile
+  updateProfileController as updateProfile,
+  uploadProfileImageController as uploadProfileImage
 };

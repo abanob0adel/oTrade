@@ -8,6 +8,7 @@ import bunnyCDN from '../../utils/bunnycdn.js';
 import { generateSlug } from '../../utils/translationHelper.js';
 import mongoose from 'mongoose';
 
+
 // Helper function to check if user has access to a book
 // Helper function to format book content response for free access
 const formatBookContentResponse = async (book, translations, requestedLang) => {
@@ -38,6 +39,7 @@ const formatBookContentResponse = async (book, translations, requestedLang) => {
   
   return content;
 };
+
 
 const createBook = async (req, res) => {
   try {
@@ -242,7 +244,7 @@ const createBook = async (req, res) => {
   }
 };
 
-
+  
 
 
 

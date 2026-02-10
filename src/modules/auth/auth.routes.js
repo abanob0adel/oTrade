@@ -5,7 +5,8 @@ import {
   forgotPassword,
   resetPassword,
   getProfile,
-  updateProfile
+  updateProfile,
+  uploadProfileImage
 } from './auth.controller.js';
 import { getCurrentUserPermissions, getAllPermissions } from './rbac.controller.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
@@ -66,6 +67,14 @@ router.get('/profile', authenticate, getProfile);
  * @body    { fullName?, email?, currentPassword?, newPassword? }
  */
 router.put('/profile', authenticate, updateProfile);
+
+/**
+ * @route   POST /api/auth/profile/image
+ * @desc    Upload profile image
+ * @access  Private
+ * @body    { profileImage }
+ */
+router.post('/profile/image', authenticate, uploadProfileImage);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // RBAC Endpoints
