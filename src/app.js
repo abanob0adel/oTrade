@@ -24,6 +24,7 @@ app.use(cors(corsOptions));
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Support FormData
 
 // Routes
 import authRoutes from './modules/auth/auth.routes.js';

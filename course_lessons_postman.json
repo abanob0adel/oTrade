@@ -1,0 +1,318 @@
+{
+  "info": {
+    "name": "Course Lessons System",
+    "description": "Complete lessons management system for courses with bilingual support (Arabic & English)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Lessons - Admin",
+      "item": [
+        {
+          "name": "Add Lesson to Course (FormData - Separate Fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title_en",
+                  "value": "Introduction to Trading",
+                  "type": "text"
+                },
+                {
+                  "key": "title_ar",
+                  "value": "مقدمة في التداول",
+                  "type": "text"
+                },
+                {
+                  "key": "description_en",
+                  "value": "Learn the basics of trading",
+                  "type": "text"
+                },
+                {
+                  "key": "description_ar",
+                  "value": "تعلم أساسيات التداول",
+                  "type": "text"
+                },
+                {
+                  "key": "content_en",
+                  "value": "Full lesson content in English",
+                  "type": "text"
+                },
+                {
+                  "key": "content_ar",
+                  "value": "محتوى الدرس الكامل بالعربية",
+                  "type": "text"
+                },
+                {
+                  "key": "videoUrl",
+                  "value": "https://cdn.example.com/lessons/intro.mp4",
+                  "type": "text"
+                },
+                {
+                  "key": "contentUrl",
+                  "value": "https://cdn.example.com/lessons/intro-materials.pdf",
+                  "type": "text"
+                },
+                {
+                  "key": "duration",
+                  "value": "1800",
+                  "type": "text"
+                },
+                {
+                  "key": "order",
+                  "value": "1",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/courses/:courseId/lessons",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", ":courseId", "lessons"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course_id_here"
+                }
+              ]
+            },
+            "description": "Add a new lesson using FormData with separate fields for each language. This is the recommended approach."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Lesson to Course (JSON)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": {\n    \"en\": \"Introduction to Trading\",\n    \"ar\": \"مقدمة في التداول\"\n  },\n  \"description\": {\n    \"en\": \"Learn the basics of trading\",\n    \"ar\": \"تعلم أساسيات التداول\"\n  },\n  \"content\": {\n    \"en\": \"Full lesson content in English\",\n    \"ar\": \"محتوى الدرس الكامل بالعربية\"\n  },\n  \"videoUrl\": \"https://cdn.example.com/lessons/intro.mp4\",\n  \"contentUrl\": \"https://cdn.example.com/lessons/intro-materials.pdf\",\n  \"duration\": 1800,\n  \"order\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/courses/:courseId/lessons",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", ":courseId", "lessons"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course_id_here"
+                }
+              ]
+            },
+            "description": "Add a new lesson using JSON format. Alternative to FormData."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Lesson",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": {\n    \"en\": \"Updated Lesson Title\",\n    \"ar\": \"عنوان الدرس المحدث\"\n  },\n  \"description\": {\n    \"en\": \"Updated description\",\n    \"ar\": \"الوصف المحدث\"\n  },\n  \"videoUrl\": \"https://cdn.example.com/lessons/updated.mp4\",\n  \"duration\": 2100,\n  \"order\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/courses/:courseId/lessons/:lessonId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", ":courseId", "lessons", ":lessonId"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course_id_here"
+                },
+                {
+                  "key": "lessonId",
+                  "value": "lesson_id_here"
+                }
+              ]
+            },
+            "description": "Update an existing lesson. Requires admin authentication and courses:update permission."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Lesson",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/courses/:courseId/lessons/:lessonId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", ":courseId", "lessons", ":lessonId"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course_id_here"
+                },
+                {
+                  "key": "lessonId",
+                  "value": "lesson_id_here"
+                }
+              ]
+            },
+            "description": "Delete a lesson from a course. Also deletes all translations. Requires admin authentication and courses:delete permission."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Lessons - Public/User",
+      "item": [
+        {
+          "name": "Get All Lessons (English)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept-Language",
+                "value": "en"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/courses/:courseId/lessons",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", ":courseId", "lessons"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course_id_here"
+                }
+              ]
+            },
+            "description": "Get all lessons for a course in English. Returns lessons sorted by order."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Lessons (Arabic)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept-Language",
+                "value": "ar"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/courses/:courseId/lessons",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", ":courseId", "lessons"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course_id_here"
+                }
+              ]
+            },
+            "description": "Get all lessons for a course in Arabic. Returns lessons sorted by order."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single Lesson (English)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept-Language",
+                "value": "en"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/courses/:courseId/lessons/:lessonId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", ":courseId", "lessons", ":lessonId"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course_id_here"
+                },
+                {
+                  "key": "lessonId",
+                  "value": "lesson_id_here"
+                }
+              ]
+            },
+            "description": "Get a single lesson by ID in English."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single Lesson (Arabic)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept-Language",
+                "value": "ar"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/courses/:courseId/lessons/:lessonId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", ":courseId", "lessons", ":lessonId"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course_id_here"
+                },
+                {
+                  "key": "lessonId",
+                  "value": "lesson_id_here"
+                }
+              ]
+            },
+            "description": "Get a single lesson by ID in Arabic."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "your_admin_token_here",
+      "type": "string"
+    }
+  ]
+}

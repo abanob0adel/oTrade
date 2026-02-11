@@ -194,8 +194,8 @@ export const validatePlans = (plans) => {
  * @returns {Object} - { valid: boolean, error: string|null }
  */
 export const validateContentUrl = (contentUrl) => {
-  // contentUrl is optional
-  if (!contentUrl) {
+  // contentUrl is optional - allow empty, null, or undefined
+  if (!contentUrl || contentUrl.trim() === '') {
     return {
       valid: true,
       error: null
@@ -209,9 +209,20 @@ export const validateContentUrl = (contentUrl) => {
     };
   }
   
+  // Trim whitespace
+  const trimmedUrl = contentUrl.trim();
+  
+  // Allow empty after trim
+  if (trimmedUrl === '') {
+    return {
+      valid: true,
+      error: null
+    };
+  }
+  
   // Basic URL validation
   try {
-    new URL(contentUrl);
+    new URL(trimmedUrl);
     return {
       valid: true,
       error: null
@@ -219,7 +230,7 @@ export const validateContentUrl = (contentUrl) => {
   } catch (e) {
     return {
       valid: false,
-      error: 'contentUrl must be a valid URL.'
+      error: `contentUrl must be a valid URL. Received: "${trimmedUrl}". Make sure it starts with https:// (not https//)`
     };
   }
 };

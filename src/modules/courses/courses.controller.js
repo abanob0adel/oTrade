@@ -38,10 +38,14 @@ const createCourse = async (req, res) => {
     }
 
     // ===== Content URL =====
-    contentUrl = req.body.contentUrl?.trim();
-    if (contentUrl) {
+    contentUrl = req.body.contentUrl?.trim() || '';
+    
+    // Only validate if contentUrl is provided and not empty
+    if (contentUrl && contentUrl.length > 0) {
       const urlValidation = validateContentUrl(contentUrl);
-      if (!urlValidation.valid) return res.status(400).json({ error: urlValidation.error });
+      if (!urlValidation.valid) {
+        return res.status(400).json({ error: urlValidation.error });
+      }
     }
 
     // ===== Cover Image =====

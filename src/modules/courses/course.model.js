@@ -1,5 +1,30 @@
 import mongoose from 'mongoose';
 
+const lessonSchema = new mongoose.Schema({
+  // Translations stored separately in Translation collection
+  // We only store reference data here
+  videoUrl: {
+    type: String,
+    default: null
+  },
+  contentUrl: {
+    type: String,
+    default: null
+  },
+  duration: {
+    type: Number, // in seconds
+    default: 0
+  },
+  order: {
+    type: Number,
+    default: 0
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: true });
+
 const courseSchema = new mongoose.Schema({
   isFree: {
     type: Boolean,
@@ -30,7 +55,10 @@ const courseSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true
-  }
+  },
+
+  // Lessons array
+  lessons: [lessonSchema]
 }, { timestamps: true });
 
 

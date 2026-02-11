@@ -12,7 +12,8 @@ const translationSchema = new mongoose.Schema({
       'analyst',
       'testimonial',
       'books',
-      'articles'
+      'articles',
+      'lesson'
     ],
     required: true
   },
