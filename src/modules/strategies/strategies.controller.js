@@ -82,7 +82,15 @@ const createStrategy = async (req, res) => {
     if (!validation.valid) return res.status(400).json({ error: validation.error });
 
     const { en, ar } = validation.data;
-    const slug = en?.title ? generateSlug(en.title) : undefined;
+    let slug = en?.title ? generateSlug(en.title) : undefined;
+
+    // ===== Check for duplicate slug and fix it =====
+    if (slug) {
+      const existingSlug = await Strategy.findOne({ slug });
+      if (existingSlug) {
+        slug = slug + '-' + Date.now();
+      }
+    }
 
     // ===== Payment Flags =====
     let isPaid = false;

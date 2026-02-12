@@ -49,6 +49,7 @@ import contactRoutes from './modules/contacts/contact.routes.js';
 import consultationRoutes from './modules/consultations/consultation.routes.js';
 import paymentRoutes from './modules/payments/payment.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import goldRoutes from './modules/gold/gold.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/subscriptions', subscriptionRoutes);
@@ -71,6 +72,7 @@ app.use('/api/news', newsRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/gold', goldRoutes);
 //app.use('/api/payments', paymentRoutes);
 
 // Health check endpoint
