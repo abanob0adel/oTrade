@@ -222,8 +222,9 @@ export const getLessons = async (req, res) => {
     console.log('Accept-Language:', req.get('Accept-Language'));
     console.log('=============================\n');
 
-    // Get requested language
+    // Get requested language(s)
     const requestedLang = req.get('Accept-Language') || 'en';
+    const requestMultipleLangs = requestedLang.includes('|'); // Check if requesting multiple languages
 
     // Validate courseId
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
@@ -250,7 +251,27 @@ export const getLessons = async (req, res) => {
       sortedLessons.map(async (lesson) => {
         const translations = await getTranslationsByEntity('lesson', lesson._id);
         
-        // Get translation for requested language
+        // If requesting multiple languages (ar|en)
+        if (requestMultipleLangs) {
+          const translationsObject = {};
+          translations.forEach(t => {
+            translationsObject[t.language] = {
+              title: t.title,
+              description: t.description,
+              content: t.content
+            };
+          });
+
+          return {
+            id: lesson._id,
+            translations: translationsObject,
+            videoUrl: lesson.videoUrl,
+            order: lesson.order,
+            createdAt: lesson.createdAt
+          };
+        }
+
+        // Single language - return flat structure
         const translation = translations.find(t => t.language === requestedLang) ||
                            translations.find(t => t.language === 'en') ||
                            translations[0];
@@ -290,8 +311,9 @@ export const getLessonById = async (req, res) => {
   try {
     const { courseId, lessonId } = req.params;
 
-    // Get requested language
+    // Get requested language(s)
     const requestedLang = req.get('Accept-Language') || 'en';
+    const requestMultipleLangs = requestedLang.includes('|'); // Check if requesting multiple languages
 
     // Validate IDs
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
@@ -328,6 +350,31 @@ export const getLessonById = async (req, res) => {
 
     // Get translations
     const translations = await getTranslationsByEntity('lesson', lessonId);
+
+    // If requesting multiple languages (ar|en)
+    if (requestMultipleLangs) {
+      const translationsObject = {};
+      translations.forEach(t => {
+        translationsObject[t.language] = {
+          title: t.title,
+          description: t.description,
+          content: t.content
+        };
+      });
+
+      return res.status(200).json({
+        success: true,
+        lesson: {
+          id: lesson._id,
+          translations: translationsObject,
+          videoUrl: lesson.videoUrl,
+          order: lesson.order,
+          createdAt: lesson.createdAt
+        }
+      });
+    }
+
+    // Single language - return flat structure
     const translation = translations.find(t => t.language === requestedLang) ||
                        translations.find(t => t.language === 'en') ||
                        translations[0];
