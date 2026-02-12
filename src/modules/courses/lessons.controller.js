@@ -137,15 +137,11 @@ export const addLesson = async (req, res) => {
 
     // Get other fields
     const videoUrl = req.body.videoUrl || null;
-    const contentUrl = req.body.contentUrl || null;
-    const duration = req.body.duration ? parseInt(req.body.duration) : 0;
     const order = req.body.order ? parseInt(req.body.order) : (course.lessons.length + 1);
 
     // Create new lesson (without title - stored in translations)
     const newLesson = {
       videoUrl,
-      contentUrl,
-      duration,
       order,
       createdAt: new Date()
     };
@@ -199,8 +195,6 @@ export const addLesson = async (req, res) => {
         id: lessonId,
         translations: translationsObject,
         videoUrl: addedLesson.videoUrl,
-        contentUrl: addedLesson.contentUrl,
-        duration: addedLesson.duration,
         order: addedLesson.order,
         createdAt: addedLesson.createdAt
       }
@@ -267,8 +261,6 @@ export const getLessons = async (req, res) => {
           description: translation?.description || '',
           content: translation?.content || '',
           videoUrl: lesson.videoUrl,
-          contentUrl: lesson.contentUrl,
-          duration: lesson.duration,
           order: lesson.order,
           createdAt: lesson.createdAt
         };
@@ -348,8 +340,6 @@ export const getLessonById = async (req, res) => {
         description: translation?.description || '',
         content: translation?.content || '',
         videoUrl: lesson.videoUrl,
-        contentUrl: lesson.contentUrl,
-        duration: lesson.duration,
         order: lesson.order,
         createdAt: lesson.createdAt
       }
@@ -371,7 +361,7 @@ export const getLessonById = async (req, res) => {
 export const updateLesson = async (req, res) => {
   try {
     const { courseId, lessonId } = req.params;
-    const { title, description, content, videoUrl, contentUrl, duration, order } = req.body;
+    const { title, description, content, videoUrl, order } = req.body;
 
     // Validate IDs
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
@@ -408,8 +398,6 @@ export const updateLesson = async (req, res) => {
 
     // Update lesson fields
     if (videoUrl !== undefined) lesson.videoUrl = videoUrl;
-    if (contentUrl !== undefined) lesson.contentUrl = contentUrl;
-    if (duration !== undefined) lesson.duration = duration;
     if (order !== undefined) lesson.order = order;
 
     await course.save();
@@ -457,8 +445,6 @@ export const updateLesson = async (req, res) => {
         id: lesson._id,
         translations: translationsObject,
         videoUrl: lesson.videoUrl,
-        contentUrl: lesson.contentUrl,
-        duration: lesson.duration,
         order: lesson.order,
         createdAt: lesson.createdAt
       }

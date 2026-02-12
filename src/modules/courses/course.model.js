@@ -7,14 +7,6 @@ const lessonSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  contentUrl: {
-    type: String,
-    default: null
-  },
-  duration: {
-    type: Number, // in seconds
-    default: 0
-  },
   order: {
     type: Number,
     default: 0
