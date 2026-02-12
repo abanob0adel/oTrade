@@ -252,8 +252,20 @@ const getStrategyById = async (req, res) => {
     }
 
     /* ===== PAID ===== */
-    if (!req.user)
-      return res.status(401).json({ error: 'Authentication required' });
+    // If user is not authenticated, return 403
+    if (!req.user) {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'This strategy requires an active subscription plan. Please login and subscribe to access.',
+        strategy: {
+          id: strategy._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          coverImageUrl: strategy.coverImageUrl,
+          locked: true
+        }
+      });
+    }
 
     if (isAdmin) {
       return res.status(200).json({
@@ -285,14 +297,18 @@ const getStrategyById = async (req, res) => {
       });
     }
 
-    return res.status(200).json({
+    // User is authenticated but doesn't have access
+    return res.status(403).json({
+      error: 'Access denied',
+      message: 'You need to subscribe to a plan that includes this strategy',
       strategy: {
         id: strategy._id,
         title: translation?.title || '',
         description: translation?.description || '',
         coverImageUrl: strategy.coverImageUrl,
         locked: true
-      }
+      },
+      requiredPlans: strategy.plans
     });
 
   } catch (error) {
