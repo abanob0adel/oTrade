@@ -1,7 +1,8 @@
 import express from 'express';
-import { getGoldPrice, getGoldPriceWithCache, getGoldConfig, updateGoldConfig, createGoldConfig } from './gold.controller.js';
+import { getGoldPrice, getGoldPriceWithCache, getGoldInfo, upsertGoldInfo } from './gold.controller.js';
 import { authenticate } from '../../middlewares/rbac.middleware.js';
 import { checkPermission } from '../../middlewares/rbac.middleware.js';
+import { uploadWithOptionalImage } from '../../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -14,11 +15,10 @@ const router = express.Router();
 router.get('/', getGoldPrice);
 router.get('/cached', getGoldPriceWithCache);
 
-// Public route - Get gold config
-router.get('/config', getGoldConfig);
+// Public route - Get gold info
+router.get('/info', getGoldInfo);
 
-// Admin routes - Manage gold config
-router.post('/config', authenticate(['admin', 'super_admin']), checkPermission('courses', 'create'), createGoldConfig);
-router.put('/config', authenticate(['admin', 'super_admin']), checkPermission('courses', 'update'), updateGoldConfig);
+// Admin route - Create/Update gold info (with image upload support)
+router.post('/info', authenticate(['admin', 'super_admin']), checkPermission('courses', 'create'), uploadWithOptionalImage, upsertGoldInfo);
 
 export default router;

@@ -1,0 +1,305 @@
+{
+  "info": {
+    "name": "Gold Info - Image Upload System",
+    "description": "Complete API collection for Gold Info system with BunnyCDN image upload support",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Create/Update Gold Info (with Image)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": [],
+              "description": "Upload image file (JPG, PNG, WebP, GIF - Max 5MB)"
+            },
+            {
+              "key": "title_en",
+              "value": "Gold Trading - Live Prices",
+              "type": "text"
+            },
+            {
+              "key": "title_ar",
+              "value": "تداول الذهب - الأسعار المباشرة",
+              "type": "text"
+            },
+            {
+              "key": "description_en",
+              "value": "Gold is one of the most traded precious metals in the world. It is widely used as a safe haven asset and its price changes based on global markets and demand.",
+              "type": "text"
+            },
+            {
+              "key": "description_ar",
+              "value": "الذهب هو أحد أكثر المعادن الثمينة تداولاً في العالم. يستخدم على نطاق واسع كأصل آمن ويتغير سعره بناءً على الأسواق العالمية والطلب.",
+              "type": "text"
+            },
+            {
+              "key": "faqs_en",
+              "value": "[{\"question\":\"What is gold trading?\",\"answer\":\"Gold trading involves buying and selling gold to profit from price movements.\"},{\"question\":\"Why invest in gold?\",\"answer\":\"Gold is considered a safe haven asset that protects against inflation and economic uncertainty.\"}]",
+              "type": "text"
+            },
+            {
+              "key": "faqs_ar",
+              "value": "[{\"question\":\"ما هو تداول الذهب؟\",\"answer\":\"تداول الذهب يتضمن شراء وبيع الذهب للاستفادة من تحركات الأسعار.\"},{\"question\":\"لماذا الاستثمار في الذهب؟\",\"answer\":\"يعتبر الذهب أصلاً آمناً يحمي من التضخم وعدم اليقين الاقتصادي.\"}]",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/gold/info",
+          "host": ["{{base_url}}"],
+          "path": ["gold", "info"]
+        },
+        "description": "Create or update gold info with image upload. Supports bilingual content (Arabic & English)."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Update Gold Info (Text Only - No Image)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "title_en",
+              "value": "Gold Trading - Updated",
+              "type": "text"
+            },
+            {
+              "key": "title_ar",
+              "value": "تداول الذهب - محدث",
+              "type": "text"
+            },
+            {
+              "key": "description_en",
+              "value": "Updated description for gold trading.",
+              "type": "text"
+            },
+            {
+              "key": "description_ar",
+              "value": "وصف محدث لتداول الذهب.",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/gold/info",
+          "host": ["{{base_url}}"],
+          "path": ["gold", "info"]
+        },
+        "description": "Update gold info text fields only without changing the image."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Get Gold Info (English)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "en",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/gold/info",
+          "host": ["{{base_url}}"],
+          "path": ["gold", "info"]
+        },
+        "description": "Get gold info in English with live price data."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Get Gold Info (Arabic)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "ar",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/gold/info",
+          "host": ["{{base_url}}"],
+          "path": ["gold", "info"]
+        },
+        "description": "Get gold info in Arabic with live price data."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get Gold Info (Both Languages)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "ar|en",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/gold/info",
+          "host": ["{{base_url}}"],
+          "path": ["gold", "info"]
+        },
+        "description": "Get gold info in both Arabic and English with live price data."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Get Live Gold Price",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/gold",
+          "host": ["{{base_url}}"],
+          "path": ["gold"]
+        },
+        "description": "Get current live gold price from external API."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Get Live Gold Price (Cached)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/gold/cached",
+          "host": ["{{base_url}}"],
+          "path": ["gold", "cached"]
+        },
+        "description": "Get gold price with 30-second caching for better performance."
+      },
+      "response": []
+    },
+    {
+      "name": "8. Alternative Format - Brackets",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title[en]",
+              "value": "Gold Trading",
+              "type": "text"
+            },
+            {
+              "key": "title[ar]",
+              "value": "تداول الذهب",
+              "type": "text"
+            },
+            {
+              "key": "description[en]",
+              "value": "Gold description in English",
+              "type": "text"
+            },
+            {
+              "key": "description[ar]",
+              "value": "وصف الذهب بالعربية",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/gold/info",
+          "host": ["{{base_url}}"],
+          "path": ["gold", "info"]
+        },
+        "description": "Alternative format using brackets notation: title[en], title[ar]"
+      },
+      "response": []
+    },
+    {
+      "name": "9. Alternative Format - JSON String",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title",
+              "value": "{\"en\":\"Gold Trading\",\"ar\":\"تداول الذهب\"}",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "value": "{\"en\":\"Gold description\",\"ar\":\"وصف الذهب\"}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/gold/info",
+          "host": ["{{base_url}}"],
+          "path": ["gold", "info"]
+        },
+        "description": "Alternative format using JSON string for bilingual fields"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "YOUR_ADMIN_TOKEN_HERE",
+      "type": "string"
+    }
+  ]
+}

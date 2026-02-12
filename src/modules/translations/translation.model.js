@@ -13,7 +13,8 @@ const translationSchema = new mongoose.Schema({
       'testimonial',
       'books',
       'articles',
-      'lesson'
+      'lesson',
+      'gold'
     ],
     required: true
   },
