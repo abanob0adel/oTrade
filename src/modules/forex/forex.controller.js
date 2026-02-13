@@ -1,62 +1,51 @@
 import axios from 'axios';
-import GoldInfo from './gold.model.js';
-import Translation from '../translations/translation.model.js';
+import ForexInfo from './forex.model.js';
 import { createOrUpdateTranslation, getTranslationsByEntity } from '../translations/translation.service.js';
 import bunnycdn from '../../utils/bunnycdn.js';
 
 /**
- * Get live gold price from external API
- * GET /api/gold
+ * Get live forex price from external API
+ * GET /api/forex
  */
-export const getGoldPrice = async (req, res) => {
+export const getForexPrice = async (req, res) => {
   try {
     // Get requested language
     const requestedLang = req.get('Accept-Language') || 'en';
     const requestMultipleLangs = requestedLang.includes('|');
 
-    // Fetch gold price from external API
-    const response = await axios.get('https://api.gold-api.com/price/XAU', {
+    // Fetch EUR/USD forex rate from external API
+    const response = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR', {
       timeout: 10000
     });
 
-    console.log('Gold API Response:', JSON.stringify(response.data, null, 2));
+    console.log('Forex API Response:', JSON.stringify(response.data, null, 2));
 
-    // Extract data from API response - handle different response formats
-    let price, currency, updatedAt;
+    // Extract data from API response
+    let rates, baseCurrency, updatedAt;
     
     if (response.data) {
-      // Try different possible response structures
-      if (response.data.price) {
-        price = response.data.price;
-        currency = response.data.currency || 'USD';
-        updatedAt = response.data.updatedAt || response.data.timestamp || response.data.updated_at;
-      } else if (response.data.data) {
-        // Nested data structure
-        price = response.data.data.price;
-        currency = response.data.data.currency || 'USD';
-        updatedAt = response.data.data.updatedAt || response.data.data.timestamp;
-      } else if (typeof response.data === 'number') {
-        // Direct price value
-        price = response.data;
-        currency = 'USD';
+      if (response.data.rates) {
+        rates = response.data.rates;
+        baseCurrency = response.data.base || 'EUR';
+        updatedAt = response.data.time_last_updated || response.data.date;
       }
     }
 
     // Validate response data
-    if (!price) {
+    if (!rates) {
       console.error('Invalid API response structure:', response.data);
       return res.status(502).json({
         success: false,
-        error: 'Invalid response from gold price API',
+        error: 'Invalid response from forex API',
         debug: process.env.NODE_ENV === 'development' ? response.data : undefined
       });
     }
 
     // Get info from database
-    const info = await GoldInfo.getInfo();
+    const info = await ForexInfo.getInfo();
 
     // Get translations
-    const translations = await getTranslationsByEntity('gold', info._id);
+    const translations = await getTranslationsByEntity('forex', info._id);
 
     // If requesting multiple languages (ar|en)
     if (requestMultipleLangs) {
@@ -71,8 +60,8 @@ export const getGoldPrice = async (req, res) => {
       return res.status(200).json({
         success: true,
         data: {
-          price: parseFloat(price).toFixed(2),
-          currency: currency,
+          base: baseCurrency,
+          rates: rates,
           lastUpdate: updatedAt || new Date().toISOString(),
           translations: translationsObject,
           coverImage: info.coverImage
@@ -87,13 +76,13 @@ export const getGoldPrice = async (req, res) => {
                        translations[0];
 
     // Prepare formatted response
-    const goldData = {
+    const forexData = {
       success: true,
       data: {
-        price: parseFloat(price).toFixed(2),
-        currency: currency,
+        base: baseCurrency,
+        rates: rates,
         lastUpdate: updatedAt || new Date().toISOString(),
-        title: translation?.title || 'Gold Trading',
+        title: translation?.title || 'Forex Trading',
         description: translation?.description || '',
         coverImage: info.coverImage
       },
@@ -101,10 +90,10 @@ export const getGoldPrice = async (req, res) => {
     };
 
     // Send response
-    res.status(200).json(goldData);
+    res.status(200).json(forexData);
 
   } catch (error) {
-    console.error('Gold API Error:', error.message);
+    console.error('Forex API Error:', error.message);
     if (error.response) {
       console.error('Error response data:', error.response.data);
     }
@@ -113,97 +102,85 @@ export const getGoldPrice = async (req, res) => {
     if (error.code === 'ECONNABORTED') {
       return res.status(504).json({
         success: false,
-        error: 'Request timeout - Gold price API is not responding'
+        error: 'Request timeout - Forex API is not responding'
       });
     }
 
     if (error.response) {
-      // API responded with error status
       return res.status(502).json({
         success: false,
-        error: 'Failed to fetch gold price from external API',
+        error: 'Failed to fetch forex rate from external API',
         details: error.response.status
       });
     }
 
     if (error.request) {
-      // Request made but no response received
       return res.status(503).json({
         success: false,
-        error: 'Gold price API is currently unavailable'
+        error: 'Forex API is currently unavailable'
       });
     }
 
-    // Generic error
     res.status(500).json({
       success: false,
-      error: 'Internal server error while fetching gold price'
+      error: 'Internal server error while fetching forex rate'
     });
   }
 };
 
 /**
- * Get gold price with caching (optional - for better performance)
- * This can be used to reduce API calls
+ * Get forex rate with caching (30 seconds)
  */
-let cachedGoldPrice = null;
+let cachedForexPrice = null;
 let cacheTimestamp = null;
 const CACHE_DURATION = 30000; // 30 seconds
 
-export const getGoldPriceWithCache = async (req, res) => {
+export const getForexPriceWithCache = async (req, res) => {
   try {
     const now = Date.now();
     const requestedLang = req.get('Accept-Language') || 'en';
     const requestMultipleLangs = requestedLang.includes('|');
 
     // Check if cache is valid
-    if (cachedGoldPrice && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+    if (cachedForexPrice && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
       return res.status(200).json({
-        ...cachedGoldPrice,
+        ...cachedForexPrice,
         cached: true,
         cacheAge: Math.floor((now - cacheTimestamp) / 1000)
       });
     }
 
     // Fetch fresh data
-    const response = await axios.get('https://api.gold-api.com/price/XAU', {
+    const response = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR', {
       timeout: 10000
     });
 
-    console.log('Gold API Response (cached):', JSON.stringify(response.data, null, 2));
+    console.log('Forex API Response (cached):', JSON.stringify(response.data, null, 2));
 
-    // Extract data from API response - handle different response formats
-    let price, currency, updatedAt;
+    let rates, baseCurrency, updatedAt;
     
     if (response.data) {
-      if (response.data.price) {
-        price = response.data.price;
-        currency = response.data.currency || 'USD';
-        updatedAt = response.data.updatedAt || response.data.timestamp || response.data.updated_at;
-      } else if (response.data.data) {
-        price = response.data.data.price;
-        currency = response.data.data.currency || 'USD';
-        updatedAt = response.data.data.updatedAt || response.data.data.timestamp;
-      } else if (typeof response.data === 'number') {
-        price = response.data;
-        currency = 'USD';
+      if (response.data.rates) {
+        rates = response.data.rates;
+        baseCurrency = response.data.base || 'EUR';
+        updatedAt = response.data.time_last_updated || response.data.date;
       }
     }
 
-    if (!price) {
+    if (!rates) {
       console.error('Invalid API response structure:', response.data);
       return res.status(502).json({
         success: false,
-        error: 'Invalid response from gold price API',
+        error: 'Invalid response from forex API',
         debug: process.env.NODE_ENV === 'development' ? response.data : undefined
       });
     }
 
     // Get info from database
-    const info = await GoldInfo.getInfo();
+    const info = await ForexInfo.getInfo();
 
     // Get translations
-    const translations = await getTranslationsByEntity('gold', info._id);
+    const translations = await getTranslationsByEntity('forex', info._id);
 
     // If requesting multiple languages (ar|en)
     if (requestMultipleLangs) {
@@ -215,11 +192,11 @@ export const getGoldPriceWithCache = async (req, res) => {
         };
       });
 
-      const goldData = {
+      const forexData = {
         success: true,
         data: {
-          price: parseFloat(price).toFixed(2),
-          currency: currency,
+          base: baseCurrency,
+          rates: rates,
           lastUpdate: updatedAt || new Date().toISOString(),
           translations: translationsObject,
           coverImage: info.coverImage
@@ -229,10 +206,10 @@ export const getGoldPriceWithCache = async (req, res) => {
       };
 
       // Update cache
-      cachedGoldPrice = goldData;
+      cachedForexPrice = forexData;
       cacheTimestamp = now;
 
-      return res.status(200).json(goldData);
+      return res.status(200).json(forexData);
     }
 
     // Single language
@@ -241,13 +218,13 @@ export const getGoldPriceWithCache = async (req, res) => {
                        translations[0];
 
     // Prepare response
-    const goldData = {
+    const forexData = {
       success: true,
       data: {
-        price: parseFloat(price).toFixed(2),
-        currency: currency,
+        base: baseCurrency,
+        rates: rates,
         lastUpdate: updatedAt || new Date().toISOString(),
-        title: translation?.title || 'Gold Trading',
+        title: translation?.title || 'Forex Trading',
         description: translation?.description || '',
         coverImage: info.coverImage
       },
@@ -256,39 +233,38 @@ export const getGoldPriceWithCache = async (req, res) => {
     };
 
     // Update cache
-    cachedGoldPrice = goldData;
+    cachedForexPrice = forexData;
     cacheTimestamp = now;
 
-    res.status(200).json(goldData);
+    res.status(200).json(forexData);
 
   } catch (error) {
-    console.error('Gold API Error:', error.message);
+    console.error('Forex API Error:', error.message);
     if (error.response) {
       console.error('Error response data:', error.response.data);
     }
 
     // If cache exists, return it even if expired
-    if (cachedGoldPrice) {
+    if (cachedForexPrice) {
       return res.status(200).json({
-        ...cachedGoldPrice,
+        ...cachedForexPrice,
         cached: true,
         stale: true,
         warning: 'Returning cached data due to API error'
       });
     }
 
-    // Handle errors (same as above)
     if (error.code === 'ECONNABORTED') {
       return res.status(504).json({
         success: false,
-        error: 'Request timeout - Gold price API is not responding'
+        error: 'Request timeout - Forex API is not responding'
       });
     }
 
     if (error.response) {
       return res.status(502).json({
         success: false,
-        error: 'Failed to fetch gold price from external API',
+        error: 'Failed to fetch forex rate from external API',
         details: error.response.status
       });
     }
@@ -296,49 +272,49 @@ export const getGoldPriceWithCache = async (req, res) => {
     if (error.request) {
       return res.status(503).json({
         success: false,
-        error: 'Gold price API is currently unavailable'
+        error: 'Forex API is currently unavailable'
       });
     }
 
     res.status(500).json({
       success: false,
-      error: 'Internal server error while fetching gold price'
+      error: 'Internal server error while fetching forex rate'
     });
   }
 };
 
 /**
- * Get gold info (title, description, FAQs from translations) + Live Price
- * GET /api/gold/info
+ * Get forex info (title, description, FAQs from translations) + Live Rate
+ * GET /api/forex/info
  */
-export const getGoldInfo = async (req, res) => {
+export const getForexInfo = async (req, res) => {
   try {
     // Get requested language(s)
     const requestedLang = req.get('Accept-Language') || 'en';
     const requestMultipleLangs = requestedLang.includes('|');
 
     // Get info from database
-    const info = await GoldInfo.getInfo();
+    const info = await ForexInfo.getInfo();
 
     // Get translations
-    const translations = await getTranslationsByEntity('gold', info._id);
+    const translations = await getTranslationsByEntity('forex', info._id);
 
-    // Fetch live gold price from external API
-    let priceData = null;
+    // Fetch live forex rate from external API
+    let rateData = null;
     try {
-      const response = await axios.get('https://api.gold-api.com/price/XAU', {
+      const response = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR', {
         timeout: 5000
       });
 
-      if (response.data && response.data.price && response.data.currency) {
-        priceData = {
-          price: parseFloat(response.data.price).toFixed(2),
-          currency: response.data.currency,
-          lastUpdate: response.data.updatedAt || new Date().toISOString()
+      if (response.data && response.data.rates && response.data.rates.USD) {
+        rateData = {
+          rate: parseFloat(response.data.rates.USD).toFixed(4),
+          pair: 'EUR/USD',
+          lastUpdate: response.data.time_last_updated || new Date().toISOString()
         };
       }
-    } catch (priceError) {
-      console.error('Failed to fetch gold price:', priceError.message);
+    } catch (rateError) {
+      console.error('Failed to fetch forex rate:', rateError.message);
     }
 
     // If requesting multiple languages (ar|en)
@@ -357,7 +333,7 @@ export const getGoldInfo = async (req, res) => {
         data: {
           translations: translationsObject,
           coverImage: info.coverImage,
-          ...(priceData && { livePrice: priceData }),
+          ...(rateData && { liveRate: rateData }),
           updatedAt: info.updatedAt
         }
       });
@@ -381,32 +357,32 @@ export const getGoldInfo = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        title: translation?.title || 'Gold Trading',
+        title: translation?.title || 'Forex Trading',
         description: translation?.description || '',
         coverImage: info.coverImage,
         faqs: faqs,
-        ...(priceData && { livePrice: priceData }),
+        ...(rateData && { liveRate: rateData }),
         updatedAt: info.updatedAt
       }
     });
   } catch (error) {
-    console.error('Get Gold Info Error:', error);
+    console.error('Get Forex Info Error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to get gold information'
+      error: 'Failed to get forex information'
     });
   }
 };
 
 /**
- * Create/Update gold info (title, description, FAQs, coverImage)
- * POST /api/gold/info
+ * Create/Update forex info (title, description, FAQs, coverImage)
+ * POST /api/forex/info
  * Admin only
  * Supports FormData with bilingual content
  */
-export const upsertGoldInfo = async (req, res) => {
+export const upsertForexInfo = async (req, res) => {
   try {
-    console.log('\n===== UPSERT GOLD INFO DEBUG =====');
+    console.log('\n===== UPSERT FOREX INFO DEBUG =====');
     console.log('Body:', req.body);
     console.log('Files:', req.files);
     console.log('==================================\n');
@@ -427,7 +403,6 @@ export const upsertGoldInfo = async (req, res) => {
       title = req.body.title;
     }
 
-    // Support individual fields (title_en, title_ar, title[en], title[ar])
     if (req.body.title_en) title.en = req.body.title_en;
     if (req.body.title_ar) title.ar = req.body.title_ar;
     if (req.body['title[en]']) title.en = req.body['title[en]'];
@@ -449,11 +424,11 @@ export const upsertGoldInfo = async (req, res) => {
     if (req.body['description[en]']) description.en = req.body['description[en]'];
     if (req.body['description[ar]']) description.ar = req.body['description[ar]'];
 
-    // Parse FAQs (stored in content field as JSON)
+    // Parse FAQs
     if (typeof req.body.faqs === 'string') {
       try {
         const parsedFaqs = JSON.parse(req.body.faqs);
-        faqs = { en: parsedFaqs, ar: parsedFaqs }; // Same FAQs for both languages initially
+        faqs = { en: parsedFaqs, ar: parsedFaqs };
       } catch (e) {
         faqs = {};
       }
@@ -490,29 +465,27 @@ export const upsertGoldInfo = async (req, res) => {
       }
     }
 
-    // Get or create gold info
-    let info = await GoldInfo.findOne();
+    // Get or create forex info
+    let info = await ForexInfo.findOne();
     
     // Handle cover image upload
-    let coverImageUrl = info?.coverImage || 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&q=80';
+    let coverImageUrl = info?.coverImage || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80';
     
     // Check if file was uploaded
     if (req.files?.coverImage && req.files.coverImage[0]) {
       console.log('Uploading cover image to BunnyCDN...');
       const file = req.files.coverImage[0];
-      coverImageUrl = await bunnycdn.uploadImage(file.buffer, file.originalname, 'gold');
+      coverImageUrl = await bunnycdn.uploadImage(file.buffer, file.originalname, 'forex');
       console.log('Cover image uploaded:', coverImageUrl);
     } else if (req.body.coverImage) {
-      // Fallback to URL from body if no file uploaded
       coverImageUrl = req.body.coverImage;
     }
     
     if (!info) {
-      info = await GoldInfo.create({
+      info = await ForexInfo.create({
         coverImage: coverImageUrl
       });
     } else {
-      // Update coverImage
       info.coverImage = coverImageUrl;
       info.updatedAt = new Date();
       await info.save();
@@ -521,10 +494,10 @@ export const upsertGoldInfo = async (req, res) => {
     // Save translations
     if (title.en || description.en || faqs.en) {
       await createOrUpdateTranslation(
-        'gold',
+        'forex',
         info._id,
         'en',
-        title.en || 'Gold Trading',
+        title.en || 'Forex Trading',
         description.en || '',
         faqs.en ? JSON.stringify(faqs.en) : '[]'
       );
@@ -532,17 +505,17 @@ export const upsertGoldInfo = async (req, res) => {
 
     if (title.ar || description.ar || faqs.ar) {
       await createOrUpdateTranslation(
-        'gold',
+        'forex',
         info._id,
         'ar',
-        title.ar || 'تداول الذهب',
+        title.ar || 'تداول الفوريكس',
         description.ar || '',
         faqs.ar ? JSON.stringify(faqs.ar) : '[]'
       );
     }
 
     // Get translations for response
-    const translations = await getTranslationsByEntity('gold', info._id);
+    const translations = await getTranslationsByEntity('forex', info._id);
     const translationsObject = {};
     translations.forEach(t => {
       let parsedFaqs = [];
@@ -561,7 +534,7 @@ export const upsertGoldInfo = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Gold information updated successfully',
+      message: 'Forex information updated successfully',
       data: {
         translations: translationsObject,
         coverImage: info.coverImage,
@@ -569,10 +542,10 @@ export const upsertGoldInfo = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Upsert Gold Info Error:', error);
+    console.error('Upsert Forex Info Error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to save gold information'
+      error: 'Failed to save forex information'
     });
   }
 };

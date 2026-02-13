@@ -21,7 +21,7 @@ export const hasAccess = (userPlans, requiredPlanIds) => {
 export const createOrUpdateTranslation = async (entityType, entityId, language, title, description, content) => {
   try {
     if (!['ar', 'en'].includes(language)) throw new Error('Language must be either ar or en');
-    const validEntityTypes = ['course','strategy','analysis','webinar','psychology','analyst','testimonial','books','articles','lesson','gold'];
+    const validEntityTypes = ['course','strategy','analysis','webinar','psychology','analyst','testimonial','books','articles','lesson','gold','forex','bitcoin'];
     if (!validEntityTypes.includes(entityType)) throw new Error(`Invalid entityType: ${validEntityTypes.join(', ')}`);
 
     const translationData = { entityType, entityId, language, title: title || '', description: description || '', content: content || '' };
