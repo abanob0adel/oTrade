@@ -10,14 +10,19 @@ import mongoose from 'mongoose';
 
 
 // Helper function to check if user has access to a book
+
 // Helper function to format book content response for free access
+
 const formatBookContentResponse = async (book, translations, requestedLang) => {
+
   // Find the translation matching the requested language, fallback to English
+ 
   const requestedTranslation = 
     translations.find(t => t.language === requestedLang) ||
     translations.find(t => t.language === 'en');
-  
-  // Base content object with full content always available
+
+    // Base content object with full content always available
+
   const content = {
     id: book._id,
     title: book.title,

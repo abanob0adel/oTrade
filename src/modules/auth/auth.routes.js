@@ -74,6 +74,7 @@ router.put('/profile', authenticate, updateProfile);
  * @access  Private
  * @body    { profileImage }
  */
+
 router.post('/profile/image', authenticate, uploadProfileImage);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

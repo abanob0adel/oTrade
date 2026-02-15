@@ -58,11 +58,11 @@ Authorization: Bearer YOUR_ADMIN_TOKEN
 Content-Type: multipart/form-data
 
 Body:
-- coverImage: [file]
-- title_en: "Forex Trading"
-- title_ar: "تداول الفوريكس"
-- description_en: "Trade major currency pairs"
-- description_ar: "تداول أزواج العملات الرئيسية"
+ coverImage: [file]
+ title_en: "Forex Trading"
+ title_ar: "تداول الفوريكس"
+ description_en: "Trade major currency pairs"
+ description_ar: "تداول أزواج العملات الرئيسية"
 ```
 
 ### Bitcoin

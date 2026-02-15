@@ -53,6 +53,7 @@ import goldRoutes from './modules/gold/gold.routes.js';
 import forexRoutes from './modules/forex/forex.routes.js';
 import bitcoinRoutes from './modules/bitcoin/bitcoin.routes.js';
 import marketAnalysisRoutes from './modules/market-analysis/market-analysis.routes.js';
+import emailRoutes from './modules/emails/email.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/subscriptions', subscriptionRoutes);
@@ -79,6 +80,7 @@ app.use('/api/gold', goldRoutes);
 app.use('/api/forex', forexRoutes);
 app.use('/api/bitcoin', bitcoinRoutes);
 app.use('/api/market-analysis', marketAnalysisRoutes);
+app.use('/api/emails', emailRoutes);
 //app.use('/api/payments', paymentRoutes);
 
 // Health check endpoint

@@ -92,6 +92,8 @@ const updateProfileController = async (req, res) => {
 };
 
 
+
+
 /**
  * 📸 Upload Profile Image Controller
  * POST /api/auth/profile/image
@@ -117,6 +119,7 @@ const uploadProfileImageController = async (req, res) => {
     handleError(res, 400, error.message);
   }
 };
+
 
 
 export { 
