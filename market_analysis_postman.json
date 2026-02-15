@@ -1,0 +1,631 @@
+{
+  "info": {
+    "name": "Market Analysis System",
+    "description": "Complete API collection for Market Analysis system with 6 categories",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Create Gulf Stocks Analysis",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "category",
+              "value": "gulf-stocks",
+              "type": "text",
+              "description": "Category: gulf-stocks"
+            },
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": [],
+              "description": "Cover image for card/list view"
+            },
+            {
+              "key": "image",
+              "type": "file",
+              "src": [],
+              "description": "Main image inside article"
+            },
+            {
+              "key": "title_en",
+              "value": "Saudi Stock Market Analysis Q1 2026",
+              "type": "text"
+            },
+            {
+              "key": "title_ar",
+              "value": "تحليل سوق الأسهم السعودية الربع الأول 2026",
+              "type": "text"
+            },
+            {
+              "key": "description_en",
+              "value": "Comprehensive analysis of Saudi stock market performance in Q1 2026, covering major sectors and investment opportunities.",
+              "type": "text"
+            },
+            {
+              "key": "description_ar",
+              "value": "تحليل شامل لأداء سوق الأسهم السعودية في الربع الأول من عام 2026، يغطي القطاعات الرئيسية وفرص الاستثمار.",
+              "type": "text"
+            },
+            {
+              "key": "content_en",
+              "value": "The Saudi stock market showed strong performance in Q1 2026...\n\nKey Highlights:\n- Banking sector up 15%\n- Energy sector stable\n- Technology sector emerging\n\nInvestment Recommendations:\n1. Focus on banking stocks\n2. Monitor oil prices\n3. Consider tech startups",
+              "type": "text"
+            },
+            {
+              "key": "content_ar",
+              "value": "أظهر سوق الأسهم السعودية أداءً قوياً في الربع الأول من عام 2026...\n\nأبرز النقاط:\n- قطاع البنوك ارتفع بنسبة 15%\n- قطاع الطاقة مستقر\n- قطاع التكنولوجيا في نمو\n\nتوصيات الاستثمار:\n1. التركيز على أسهم البنوك\n2. مراقبة أسعار النفط\n3. النظر في شركات التكنولوجيا الناشئة",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/market-analysis",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Create Egyptian Stocks Analysis",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "category",
+              "value": "egyptian-stocks",
+              "type": "text"
+            },
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title_en",
+              "value": "Egyptian Stock Exchange Analysis 2026",
+              "type": "text"
+            },
+            {
+              "key": "title_ar",
+              "value": "تحليل البورصة المصرية 2026",
+              "type": "text"
+            },
+            {
+              "key": "description_en",
+              "value": "In-depth analysis of Egyptian stock market trends and opportunities.",
+              "type": "text"
+            },
+            {
+              "key": "description_ar",
+              "value": "تحليل متعمق لاتجاهات وفرص سوق الأسهم المصرية.",
+              "type": "text"
+            },
+            {
+              "key": "content_en",
+              "value": "The Egyptian stock market is showing positive momentum...\n\nKey Sectors:\n- Real Estate\n- Banking\n- Telecommunications\n\nMarket Outlook: Bullish",
+              "type": "text"
+            },
+            {
+              "key": "content_ar",
+              "value": "يظهر سوق الأسهم المصري زخماً إيجابياً...\n\nالقطاعات الرئيسية:\n- العقارات\n- البنوك\n- الاتصالات\n\nتوقعات السوق: إيجابية",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/market-analysis",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Create Forex Analysis",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "category",
+              "value": "forex",
+              "type": "text"
+            },
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title_en",
+              "value": "EUR/USD Weekly Forecast",
+              "type": "text"
+            },
+            {
+              "key": "title_ar",
+              "value": "توقعات اليورو/دولار الأسبوعية",
+              "type": "text"
+            },
+            {
+              "key": "description_en",
+              "value": "Technical and fundamental analysis of EUR/USD pair for the upcoming week.",
+              "type": "text"
+            },
+            {
+              "key": "description_ar",
+              "value": "تحليل فني وأساسي لزوج اليورو/دولار للأسبوع القادم.",
+              "type": "text"
+            },
+            {
+              "key": "content_en",
+              "value": "EUR/USD Technical Analysis:\n\nSupport Levels:\n- 1.0800\n- 1.0750\n\nResistance Levels:\n- 1.0900\n- 1.0950\n\nRecommendation: Buy on dips near support",
+              "type": "text"
+            },
+            {
+              "key": "content_ar",
+              "value": "التحليل الفني لليورو/دولار:\n\nمستويات الدعم:\n- 1.0800\n- 1.0750\n\nمستويات المقاومة:\n- 1.0900\n- 1.0950\n\nالتوصية: الشراء عند الانخفاض قرب الدعم",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/market-analysis",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Create Bitcoin Analysis",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "category",
+              "value": "bitcoin",
+              "type": "text"
+            },
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title_en",
+              "value": "Bitcoin Price Analysis - Breaking $50K",
+              "type": "text"
+            },
+            {
+              "key": "title_ar",
+              "value": "تحليل سعر البيتكوين - كسر حاجز 50 ألف دولار",
+              "type": "text"
+            },
+            {
+              "key": "description_en",
+              "value": "Bitcoin breaks through $50,000 resistance. What's next for BTC?",
+              "type": "text"
+            },
+            {
+              "key": "description_ar",
+              "value": "البيتكوين يخترق مقاومة 50,000 دولار. ما التالي لـ BTC؟",
+              "type": "text"
+            },
+            {
+              "key": "content_en",
+              "value": "Bitcoin Analysis:\n\nCurrent Price: $50,250\nMarket Cap: $980B\n\nTechnical Indicators:\n- RSI: 68 (Bullish)\n- MACD: Positive crossover\n- Moving Averages: All bullish\n\nPrice Targets:\n- Short term: $52,000\n- Medium term: $55,000\n- Long term: $60,000",
+              "type": "text"
+            },
+            {
+              "key": "content_ar",
+              "value": "تحليل البيتكوين:\n\nالسعر الحالي: 50,250 دولار\nالقيمة السوقية: 980 مليار دولار\n\nالمؤشرات الفنية:\n- RSI: 68 (صاعد)\n- MACD: تقاطع إيجابي\n- المتوسطات المتحركة: كلها صاعدة\n\nالأهداف السعرية:\n- قصير المدى: 52,000 دولار\n- متوسط المدى: 55,000 دولار\n- طويل المدى: 60,000 دولار",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/market-analysis",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Create Gold Analysis",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "category",
+              "value": "gold",
+              "type": "text"
+            },
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title_en",
+              "value": "Gold Market Outlook 2026",
+              "type": "text"
+            },
+            {
+              "key": "title_ar",
+              "value": "توقعات سوق الذهب 2026",
+              "type": "text"
+            },
+            {
+              "key": "description_en",
+              "value": "Comprehensive analysis of gold market trends and investment strategies.",
+              "type": "text"
+            },
+            {
+              "key": "description_ar",
+              "value": "تحليل شامل لاتجاهات سوق الذهب واستراتيجيات الاستثمار.",
+              "type": "text"
+            },
+            {
+              "key": "content_en",
+              "value": "Gold Market Analysis:\n\nCurrent Price: $2,045/oz\n\nKey Factors:\n- Fed interest rate policy\n- Global inflation\n- Geopolitical tensions\n\nOutlook: Bullish\nTarget: $2,200/oz by Q3",
+              "type": "text"
+            },
+            {
+              "key": "content_ar",
+              "value": "تحليل سوق الذهب:\n\nالسعر الحالي: 2,045 دولار/أونصة\n\nالعوامل الرئيسية:\n- سياسة أسعار الفائدة للفيدرالي\n- التضخم العالمي\n- التوترات الجيوسياسية\n\nالتوقعات: صاعدة\nالهدف: 2,200 دولار/أونصة بحلول الربع الثالث",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/market-analysis",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Create Indices Analysis",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "category",
+              "value": "indices",
+              "type": "text"
+            },
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title_en",
+              "value": "S&P 500 Technical Analysis",
+              "type": "text"
+            },
+            {
+              "key": "title_ar",
+              "value": "التحليل الفني لمؤشر S&P 500",
+              "type": "text"
+            },
+            {
+              "key": "description_en",
+              "value": "Technical analysis and trading strategies for S&P 500 index.",
+              "type": "text"
+            },
+            {
+              "key": "description_ar",
+              "value": "التحليل الفني واستراتيجيات التداول لمؤشر S&P 500.",
+              "type": "text"
+            },
+            {
+              "key": "content_en",
+              "value": "S&P 500 Analysis:\n\nCurrent Level: 4,850\n\nTechnical Setup:\n- Trend: Uptrend\n- Support: 4,800\n- Resistance: 4,900\n\nSector Performance:\n- Technology: Leading\n- Healthcare: Strong\n- Energy: Lagging\n\nStrategy: Buy on pullbacks",
+              "type": "text"
+            },
+            {
+              "key": "content_ar",
+              "value": "تحليل S&P 500:\n\nالمستوى الحالي: 4,850\n\nالإعداد الفني:\n- الاتجاه: صاعد\n- الدعم: 4,800\n- المقاومة: 4,900\n\nأداء القطاعات:\n- التكنولوجيا: رائد\n- الرعاية الصحية: قوي\n- الطاقة: متأخر\n\nالاستراتيجية: الشراء عند التراجعات",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/market-analysis",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. Get All Gulf Stocks Analyses",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "ar",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/market-analysis/gulf-stocks",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis", "gulf-stocks"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. Get All Forex Analyses (Both Languages)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "ar|en",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/market-analysis/forex",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis", "forex"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9. Get Single Analysis by Slug",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "en",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/market-analysis/bitcoin/bitcoin-price-analysis-breaking-50k",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis", "bitcoin", "bitcoin-price-analysis-breaking-50k"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10. Update Analysis",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "title_en",
+              "value": "Bitcoin Price Analysis - Updated",
+              "type": "text",
+              "description": "Update English title"
+            },
+            {
+              "key": "content_ar",
+              "value": "المحتوى المحدث للتحليل...",
+              "type": "text",
+              "description": "Update Arabic content"
+            },
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": [],
+              "description": "Optional: Upload new cover image"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/market-analysis/{{analysis_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis", "{{analysis_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "11. Delete Analysis",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/market-analysis/{{analysis_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis", "{{analysis_id}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "12. Alternative Format - Brackets",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "category",
+              "value": "gold",
+              "type": "text"
+            },
+            {
+              "key": "coverImage",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "title[en]",
+              "value": "Gold Analysis",
+              "type": "text"
+            },
+            {
+              "key": "title[ar]",
+              "value": "تحليل الذهب",
+              "type": "text"
+            },
+            {
+              "key": "description[en]",
+              "value": "Gold market analysis",
+              "type": "text"
+            },
+            {
+              "key": "description[ar]",
+              "value": "تحليل سوق الذهب",
+              "type": "text"
+            },
+            {
+              "key": "content[en]",
+              "value": "Full content...",
+              "type": "text"
+            },
+            {
+              "key": "content[ar]",
+              "value": "المحتوى الكامل...",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/market-analysis",
+          "host": ["{{base_url}}"],
+          "path": ["market-analysis"]
+        },
+        "description": "Alternative format using brackets: title[en], title[ar]"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "YOUR_ADMIN_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "analysis_id",
+      "value": "ANALYSIS_ID_HERE",
+      "type": "string"
+    }
+  ]
+}

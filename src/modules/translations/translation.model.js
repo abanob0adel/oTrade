@@ -16,7 +16,9 @@ const translationSchema = new mongoose.Schema({
       'lesson',
       'gold',
       'forex',
-      'bitcoin'
+      'bitcoin',
+      'market-analysis',
+      'market-category'
     ],
     required: true
   },
