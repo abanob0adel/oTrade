@@ -60,7 +60,8 @@ export const getAnalysesByCategory = async (req, res) => {
           translations.forEach(t => {
             translationsObject[t.language] = {
               title: t.title,
-              description: t.description
+              description: t.description,
+              content: t.content
             };
           });
 
@@ -69,6 +70,7 @@ export const getAnalysesByCategory = async (req, res) => {
             categoryId: analysis.category,
             slug: analysis.slug,
             coverImage: analysis.coverImage,
+            image: analysis.image,
             translations: translationsObject,
             updatedAt: analysis.updatedAt
           };
@@ -85,7 +87,9 @@ export const getAnalysesByCategory = async (req, res) => {
           slug: analysis.slug,
           title: translation?.title || '',
           description: translation?.description || '',
+          content: translation?.content || '',
           coverImage: analysis.coverImage,
+          image: analysis.image,
           updatedAt: analysis.updatedAt
         };
       })
