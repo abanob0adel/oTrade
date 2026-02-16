@@ -112,6 +112,7 @@ export const getAnalysesByCategory = async (req, res) => {
 /**
  * Get single market analysis by slug
  * GET /api/market-analysis/:category/:slug
+ * GET /api/market-analysis/single/:slug
  */
 export const getAnalysisBySlug = async (req, res) => {
   try {
@@ -119,23 +120,31 @@ export const getAnalysisBySlug = async (req, res) => {
     const requestedLang = req.get('Accept-Language') || 'en';
     const requestMultipleLangs = requestedLang.includes('|');
 
-    // Check if category exists (by slug or ID)
-    let categoryDoc;
-    if (mongoose.Types.ObjectId.isValid(category)) {
-      categoryDoc = await Category.findOne({ _id: category, isActive: true });
-    } else {
-      categoryDoc = await Category.findOne({ slug: category, isActive: true });
-    }
-    
-    if (!categoryDoc) {
-      return res.status(404).json({
-        success: false,
-        error: 'Category not found'
-      });
-    }
+    let analysis;
 
-    // Find analysis
-    const analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, slug, isActive: true });
+    // If category is provided, search within that category
+    if (category && category !== 'single') {
+      // Check if category exists (by slug or ID)
+      let categoryDoc;
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        categoryDoc = await Category.findOne({ _id: category, isActive: true });
+      } else {
+        categoryDoc = await Category.findOne({ slug: category, isActive: true });
+      }
+      
+      if (!categoryDoc) {
+        return res.status(404).json({
+          success: false,
+          error: 'Category not found'
+        });
+      }
+
+      // Find analysis in specific category
+      analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, slug, isActive: true });
+    } else {
+      // No category provided (from /single/:slug), search all categories
+      analysis = await MarketAnalysis.findOne({ slug, isActive: true });
+    }
 
     if (!analysis) {
       return res.status(404).json({

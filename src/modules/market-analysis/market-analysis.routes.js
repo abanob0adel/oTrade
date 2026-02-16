@@ -61,7 +61,7 @@ router.put('/categories/:id', authenticate(['admin', 'super_admin']), checkPermi
 router.delete('/categories/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'delete'), deleteCategory);
 
 // Analysis Routes
-router.get('/single/:id', getAnalysisById);
+router.get('/single/:slug', getAnalysisBySlug);
 router.get('/:category', pagination(), getAnalysesByCategory);
 router.get('/:category/:slug', getAnalysisBySlug);
 router.post('/', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadImages, createAnalysis);
