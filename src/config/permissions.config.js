@@ -17,7 +17,10 @@ const PERMISSIONS_CONFIG = {
   strategies: ['view', 'create', 'update', 'delete'],
   testimonials: ['view', 'create', 'update', 'delete'],
   books: ['view', 'create', 'update', 'delete'],
-  articles: ['view', 'create', 'update', 'delete']
+  articles: ['view', 'create', 'update', 'delete'],
+  partners: ['view', 'create', 'update', 'delete'],
+  news: ['view', 'create', 'update', 'delete'],
+  emails: ['view', 'create', 'update', 'delete']
 };
 
 export default PERMISSIONS_CONFIG;

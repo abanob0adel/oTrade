@@ -55,14 +55,21 @@ export const sendBulkEmail = async (req, res) => {
 
       case 'unsubscribed':
         // Get users without active subscriptions
+        // This includes:
+        // 1. Users who never had a subscription
+        // 2. Users with expired subscriptions
         const subscribedUserIds = await Subscription.find({ 
           status: 'active',
           endDate: { $gte: new Date() }
         }).distinct('userId');
         
+        // Get all users who are NOT in the subscribed list
         recipients = await User.find({ 
           _id: { $nin: subscribedUserIds }
         }, 'email name');
+        
+        console.log(`Found ${subscribedUserIds.length} subscribed users`);
+        console.log(`Found ${recipients.length} unsubscribed users`);
         break;
 
       case 'selected':
@@ -87,6 +94,20 @@ export const sendBulkEmail = async (req, res) => {
     }
 
     if (recipients.length === 0) {
+      console.log('⚠️ No recipients found. Debug info:');
+      console.log('- Recipient type:', recipientType);
+      
+      if (recipientType === 'unsubscribed') {
+        const totalUsers = await User.countDocuments();
+        const activeSubsCount = await Subscription.countDocuments({ 
+          status: 'active',
+          endDate: { $gte: new Date() }
+        });
+        console.log('- Total users in DB:', totalUsers);
+        console.log('- Active subscriptions:', activeSubsCount);
+        console.log('- Expected unsubscribed:', totalUsers - activeSubsCount);
+      }
+      
       return res.status(404).json({
         success: false,
         error: 'No recipients found for the selected criteria'
@@ -94,6 +115,16 @@ export const sendBulkEmail = async (req, res) => {
     }
 
     console.log(`Found ${recipients.length} recipients`);
+
+    // Filter for testing mode (only send to verified email in Resend test mode)
+    const isTestMode = process.env.RESEND_TEST_MODE === 'true';
+    const verifiedEmail = process.env.RESEND_VERIFIED_EMAIL || 'kirellossamy8@gmail.com';
+    
+    if (isTestMode) {
+      const originalCount = recipients.length;
+      recipients = recipients.filter(user => user.email === verifiedEmail);
+      console.log(`⚠️ Test mode enabled. Filtered from ${originalCount} to ${recipients.length} verified recipients`);
+    }
 
     // Prepare email list
     const emailList = recipients.map(user => user.email);

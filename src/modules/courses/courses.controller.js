@@ -270,7 +270,19 @@ const getAllCourses = async (req, res) => {
       else return res.status(400).json({ error: 'Type must be either free or paid.' });
     }
 
-    const courses = await Course.find(filter).sort({ createdAt: -1 });
+    // Pagination support
+    const skip = req.pagination?.skip || 0;
+    const limit = req.pagination?.limit || 0;
+
+    // Get total count
+    const total = await Course.countDocuments(filter);
+
+    // Get courses with pagination
+    let query = Course.find(filter).sort({ createdAt: -1 });
+    if (limit > 0) {
+      query = query.skip(skip).limit(limit);
+    }
+    const courses = await query;
 
     // صلاحيات المستخدم
     const isAdmin =
@@ -310,7 +322,12 @@ const getAllCourses = async (req, res) => {
       })
     );
 
-    res.status(200).json({ courses: coursesWithTranslations });
+    // Send response with or without pagination
+    if (req.paginatedResponse) {
+      res.status(200).json(req.paginatedResponse(coursesWithTranslations, total));
+    } else {
+      res.status(200).json({ courses: coursesWithTranslations });
+    }
   } catch (error) {
     console.error('Error fetching courses:', error);
     res.status(500).json({ error: 'Internal server error.' });

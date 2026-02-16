@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticate, checkPermission } from '../../middlewares/rbac.middleware.js';
+import { pagination } from '../../middlewares/pagination.middleware.js';
 import {
   createStrategy,
   getAllStrategies,
@@ -16,9 +17,9 @@ const router = express.Router();
 /**
  * Public routes
  */
-router.get('/', getAllStrategies);
-router.get('/free', getFreeStrategies);
-router.get('/paid', getPaidStrategies);
+router.get('/', pagination(), getAllStrategies);
+router.get('/free', pagination(), getFreeStrategies);
+router.get('/paid', pagination(), getPaidStrategies);
 router.get('/:id', getStrategyById);
 
 /**

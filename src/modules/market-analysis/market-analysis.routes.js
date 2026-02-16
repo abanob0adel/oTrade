@@ -15,6 +15,7 @@ import {
   deleteCategory
 } from './category.controller.js';
 import { authenticate, checkPermission } from '../../middlewares/rbac.middleware.js';
+import { pagination } from '../../middlewares/pagination.middleware.js';
 import multer from 'multer';
 
 const router = express.Router();
@@ -55,17 +56,17 @@ const uploadCategoryImage = upload.fields([
 
 // Category Management Routes
 router.get('/categories', getAllCategories);
-router.post('/categories', authenticate(['admin', 'super_admin']), checkPermission('courses', 'create'), uploadCategoryImage, createCategory);
-router.put('/categories/:id', authenticate(['admin', 'super_admin']), checkPermission('courses', 'update'), uploadCategoryImage, updateCategory);
-router.delete('/categories/:id', authenticate(['admin', 'super_admin']), checkPermission('courses', 'delete'), deleteCategory);
+router.post('/categories', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadCategoryImage, createCategory);
+router.put('/categories/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'update'), uploadCategoryImage, updateCategory);
+router.delete('/categories/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'delete'), deleteCategory);
 
 // Analysis Routes
 router.get('/single/:id', getAnalysisById);
-router.get('/:category', getAnalysesByCategory);
+router.get('/:category', pagination(), getAnalysesByCategory);
 router.get('/:category/:slug', getAnalysisBySlug);
-router.post('/', authenticate(['admin', 'super_admin']), checkPermission('courses', 'create'), uploadImages, createAnalysis);
-router.post('/:id/updates', authenticate(['admin', 'super_admin']), checkPermission('courses', 'create'), uploadUpdateImage, addAnalysisUpdate);
-router.put('/:id', authenticate(['admin', 'super_admin']), checkPermission('courses', 'update'), uploadImages, updateAnalysis);
-router.delete('/:id', authenticate(['admin', 'super_admin']), checkPermission('courses', 'delete'), deleteAnalysis);
+router.post('/', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadImages, createAnalysis);
+router.post('/:id/updates', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadUpdateImage, addAnalysisUpdate);
+router.put('/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'update'), uploadImages, updateAnalysis);
+router.delete('/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'delete'), deleteAnalysis);
 
 export default router;

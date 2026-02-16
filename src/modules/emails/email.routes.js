@@ -15,12 +15,12 @@ const router = express.Router();
  */
 
 // Send bulk email
-router.post('/send', authenticate(['admin', 'super_admin']), checkPermission('courses', 'create'), sendBulkEmail);
+router.post('/send', authenticate(['admin', 'super_admin']), checkPermission('emails', 'create'), sendBulkEmail);
 
 // Get recipient count
-router.post('/recipients/count', authenticate(['admin', 'super_admin']), checkPermission('courses', 'read'), getRecipientCount);
+router.post('/recipients/count', authenticate(['admin', 'super_admin']), checkPermission('emails', 'view'), getRecipientCount);
 
 // Get all users for selection
-router.get('/users', authenticate(['admin', 'super_admin']), checkPermission('courses', 'read'), getAllUsersForEmail);
+router.get('/users', authenticate(['admin', 'super_admin']), checkPermission('emails', 'view'), getAllUsersForEmail);
 
 export default router;

@@ -18,6 +18,6 @@ router.get('/cached', getBitcoinPriceWithCache);
 router.get('/info', getBitcoinInfo);
 
 // Admin route - Create/Update bitcoin info (with image upload support)
-router.post('/info', authenticate(['admin', 'super_admin']), checkPermission('courses', 'create'), uploadWithOptionalImage, upsertBitcoinInfo);
+router.post('/info', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadWithOptionalImage, upsertBitcoinInfo);
 
 export default router;

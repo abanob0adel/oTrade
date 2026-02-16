@@ -29,8 +29,26 @@ export const getAnalysesByCategory = async (req, res) => {
       });
     }
 
-    // Get all analyses for this category
-    const analyses = await MarketAnalysis.find({ category: categoryDoc._id, isActive: true }).sort({ updatedAt: -1 });
+    // Get pagination info if available
+    const skip = req.pagination?.skip || 0;
+    const limit = req.pagination?.limit || 0;
+
+    // Get total count
+    const total = await MarketAnalysis.countDocuments({ 
+      category: categoryDoc._id, 
+      isActive: true 
+    });
+
+    // Get paginated analyses
+    let query = MarketAnalysis.find({ category: categoryDoc._id, isActive: true })
+      .sort({ updatedAt: -1 });
+
+    // Apply pagination if middleware is used
+    if (limit > 0) {
+      query = query.skip(skip).limit(limit);
+    }
+
+    const analyses = await query;
 
     // Get translations for all analyses
     const analysesWithTranslations = await Promise.all(
@@ -73,10 +91,15 @@ export const getAnalysesByCategory = async (req, res) => {
       })
     );
 
-    res.status(200).json({
-      success: true,
-      data: analysesWithTranslations
-    });
+    // Send response with or without pagination
+    if (req.paginatedResponse) {
+      res.status(200).json(req.paginatedResponse(analysesWithTranslations, total));
+    } else {
+      res.status(200).json({
+        success: true,
+        data: analysesWithTranslations
+      });
+    }
   } catch (error) {
     console.error('Get Analyses Error:', error);
     res.status(500).json({
