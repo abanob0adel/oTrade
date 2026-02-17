@@ -138,7 +138,7 @@ export default createCourse;
 const updateCourse = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, content, plans, isFree } = req.body;
+    const { title, description, content, plans, isFree, contentUrl } = req.body;
 
     const course = await Course.findById(id);
     if (!course) {
@@ -165,6 +165,28 @@ const updateCourse = async (req, res, next) => {
           course.isPaid = true;
           course.isInSubscription = true;
         }
+      }
+    }
+
+    // ===== Update Cover Image =====
+    if (req.files?.coverImage) {
+      course.coverImageUrl = await uploadImage(req.files.coverImage[0], 'courses');
+    } else if (req.body.coverImageUrl?.startsWith('data:image')) {
+      course.coverImageUrl = await uploadImage(req.body.coverImageUrl, 'courses');
+    } else if (req.body.coverImageUrl) {
+      course.coverImageUrl = req.body.coverImageUrl;
+    }
+
+    // ===== Update Content URL =====
+    if (contentUrl !== undefined) {
+      if (contentUrl && contentUrl.trim().length > 0) {
+        const urlValidation = validateContentUrl(contentUrl.trim());
+        if (!urlValidation.valid) {
+          return res.status(400).json({ error: urlValidation.error });
+        }
+        course.contentUrl = contentUrl.trim();
+      } else {
+        course.contentUrl = '';
       }
     }
 
