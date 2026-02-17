@@ -114,9 +114,9 @@ export const getAnalysesByCategory = async (req, res) => {
 };
 
 /**
- * Get single market analysis by slug
+ * Get single market analysis by slug or ID
  * GET /api/market-analysis/:category/:slug
- * GET /api/market-analysis/single/:slug
+ * GET /api/market-analysis/single/:slug (accepts both slug and ID)
  */
 export const getAnalysisBySlug = async (req, res) => {
   try {
@@ -143,11 +143,19 @@ export const getAnalysisBySlug = async (req, res) => {
         });
       }
 
-      // Find analysis in specific category
-      analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, slug, isActive: true });
+      // Find analysis in specific category (by slug or ID)
+      if (mongoose.Types.ObjectId.isValid(slug)) {
+        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, _id: slug, isActive: true });
+      } else {
+        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, slug, isActive: true });
+      }
     } else {
-      // No category provided (from /single/:slug), search all categories
-      analysis = await MarketAnalysis.findOne({ slug, isActive: true });
+      // No category provided (from /single/:slug), search all categories by slug or ID
+      if (mongoose.Types.ObjectId.isValid(slug)) {
+        analysis = await MarketAnalysis.findOne({ _id: slug, isActive: true });
+      } else {
+        analysis = await MarketAnalysis.findOne({ slug, isActive: true });
+      }
     }
 
     if (!analysis) {
