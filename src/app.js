@@ -46,6 +46,7 @@ import testimonialRoutes from '../src/modules/testimonials/testimonials.routes.j
 import partnerRoutes from './modules/partners/partner.routes.js';
 import newsRoutes from './modules/news/news.routes.js';
 import contactRoutes from './modules/contacts/contact.routes.js';
+import contactUsRoutes from './modules/contact/contact.routes.js';
 import consultationRoutes from './modules/consultations/consultation.routes.js';
 import paymentRoutes from './modules/payments/payment.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
@@ -72,6 +73,7 @@ app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/partners', partnerRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api/contact-us', contactUsRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/bitcoin', bitcoinRoutes);
