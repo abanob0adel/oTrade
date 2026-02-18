@@ -168,6 +168,43 @@ export const getAnalysisBySlug = async (req, res) => {
     // Get translations
     const translations = await getTranslationsByEntity('market-analysis', analysis._id);
 
+    // Get updates with translations
+    const updatesWithTranslations = await Promise.all(
+      (analysis.updates || []).map(async (update) => {
+        const updateTranslations = await getTranslationsByEntity('market-analysis-update', update._id);
+
+        if (requestMultipleLangs) {
+          const translationsObject = {};
+          updateTranslations.forEach(t => {
+            translationsObject[t.language] = {
+              title: t.title,
+              content: t.content
+            };
+          });
+
+          return {
+            id: update._id,
+            image: update.image,
+            updatedAt: update.updatedAt,
+            translations: translationsObject
+          };
+        }
+
+        // Single language
+        const translation = updateTranslations.find(t => t.language === requestedLang) ||
+                           updateTranslations.find(t => t.language === 'en') ||
+                           updateTranslations[0];
+
+        return {
+          id: update._id,
+          title: translation?.title || '',
+          content: translation?.content || '',
+          image: update.image,
+          updatedAt: update.updatedAt
+        };
+      })
+    );
+
     if (requestMultipleLangs) {
       const translationsObject = {};
       translations.forEach(t => {
@@ -186,7 +223,7 @@ export const getAnalysisBySlug = async (req, res) => {
           slug: analysis.slug,
           coverImage: analysis.coverImage,
           image: analysis.image,
-          updates: analysis.updates || [],
+          updates: updatesWithTranslations,
           translations: translationsObject,
           updatedAt: analysis.updatedAt,
           createdAt: analysis.createdAt
@@ -210,7 +247,7 @@ export const getAnalysisBySlug = async (req, res) => {
         content: translation?.content || '',
         coverImage: analysis.coverImage,
         image: analysis.image,
-        updates: analysis.updates || [],
+        updates: updatesWithTranslations,
         updatedAt: analysis.updatedAt,
         createdAt: analysis.createdAt
       }
@@ -622,6 +659,7 @@ export const addAnalysisUpdate = async (req, res) => {
 
     console.log('\n===== ADD ANALYSIS UPDATE DEBUG =====');
     console.log('ID:', id);
+    console.log('Body:', req.body);
     console.log('Files:', req.files);
     console.log('=====================================\n');
 
@@ -637,6 +675,48 @@ export const addAnalysisUpdate = async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Market analysis not found'
+      });
+    }
+
+    // Parse translations for title and content
+    let title = {};
+    let content = {};
+
+    // Parse title
+    if (typeof req.body.title === 'string') {
+      try {
+        title = JSON.parse(req.body.title);
+      } catch (e) {
+        title = { en: req.body.title };
+      }
+    } else if (typeof req.body.title === 'object') {
+      title = req.body.title;
+    }
+    if (req.body.title_en) title.en = req.body.title_en;
+    if (req.body.title_ar) title.ar = req.body.title_ar;
+    if (req.body['title[en]']) title.en = req.body['title[en]'];
+    if (req.body['title[ar]']) title.ar = req.body['title[ar]'];
+
+    // Parse content
+    if (typeof req.body.content === 'string') {
+      try {
+        content = JSON.parse(req.body.content);
+      } catch (e) {
+        content = { en: req.body.content };
+      }
+    } else if (typeof req.body.content === 'object') {
+      content = req.body.content;
+    }
+    if (req.body.content_en) content.en = req.body.content_en;
+    if (req.body.content_ar) content.ar = req.body.content_ar;
+    if (req.body['content[en]']) content.en = req.body['content[en]'];
+    if (req.body['content[ar]']) content.ar = req.body['content[ar]'];
+
+    // Validate required fields
+    if (!title.en && !title.ar) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title is required in at least one language'
       });
     }
 
@@ -662,15 +742,59 @@ export const addAnalysisUpdate = async (req, res) => {
     );
     console.log('Update image uploaded:', updateImageUrl);
 
-    // Add update entry
-    analysis.updates.push({
+    // Create new update entry
+    const newUpdate = {
       image: updateImageUrl,
-      updatedAt: new Date()
-    });
+      updatedAt: req.body.updatedAt && req.body.updatedAt.trim() ? new Date(req.body.updatedAt.trim()) : new Date()
+    };
 
-    // Update the main updatedAt timestamp
-    analysis.updatedAt = new Date();
+    // Validate date
+    if (isNaN(newUpdate.updatedAt.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date format for updatedAt. Use ISO 8601 format: YYYY-MM-DDTHH:mm:ssZ'
+      });
+    }
+
+    // Add update entry
+    analysis.updates.push(newUpdate);
     await analysis.save();
+
+    // Get the created update ID
+    const createdUpdate = analysis.updates[analysis.updates.length - 1];
+
+    // Save translations for the update
+    if (title.en || content.en) {
+      await createOrUpdateTranslation(
+        'market-analysis-update',
+        createdUpdate._id,
+        'en',
+        title.en || '',
+        '',
+        content.en || ''
+      );
+    }
+
+    if (title.ar || content.ar) {
+      await createOrUpdateTranslation(
+        'market-analysis-update',
+        createdUpdate._id,
+        'ar',
+        title.ar || '',
+        '',
+        content.ar || ''
+      );
+    }
+
+    // Get translations for response
+    const translations = await getTranslationsByEntity('market-analysis-update', createdUpdate._id);
+    const translationsObject = {};
+    translations.forEach(t => {
+      translationsObject[t.language] = {
+        title: t.title,
+        content: t.content
+      };
+    });
 
     console.log('Added new update entry');
 
@@ -678,9 +802,10 @@ export const addAnalysisUpdate = async (req, res) => {
       success: true,
       message: 'Update added successfully',
       data: {
-        id: analysis._id,
-        updates: analysis.updates,
-        updatedAt: analysis.updatedAt
+        updateId: createdUpdate._id,
+        image: createdUpdate.image,
+        updatedAt: createdUpdate.updatedAt,
+        translations: translationsObject
       }
     });
   } catch (error) {
@@ -688,6 +813,286 @@ export const addAnalysisUpdate = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to add update to market analysis'
+    });
+  }
+};
+
+/**
+ * Get all updates for a market analysis
+ * GET /api/market-analysis/:id/updates
+ */
+export const getAnalysisUpdates = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestedLang = req.get('Accept-Language') || 'en';
+    const requestMultipleLangs = requestedLang.includes('|');
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid analysis ID'
+      });
+    }
+
+    const analysis = await MarketAnalysis.findById(id);
+    if (!analysis) {
+      return res.status(404).json({
+        success: false,
+        error: 'Market analysis not found'
+      });
+    }
+
+    // Get translations for all updates
+    const updatesWithTranslations = await Promise.all(
+      analysis.updates.map(async (update) => {
+        const translations = await getTranslationsByEntity('market-analysis-update', update._id);
+
+        if (requestMultipleLangs) {
+          const translationsObject = {};
+          translations.forEach(t => {
+            translationsObject[t.language] = {
+              title: t.title,
+              content: t.content
+            };
+          });
+
+          return {
+            id: update._id,
+            image: update.image,
+            updatedAt: update.updatedAt,
+            translations: translationsObject
+          };
+        }
+
+        // Single language
+        const translation = translations.find(t => t.language === requestedLang) ||
+                           translations.find(t => t.language === 'en') ||
+                           translations[0];
+
+        return {
+          id: update._id,
+          title: translation?.title || '',
+          content: translation?.content || '',
+          image: update.image,
+          updatedAt: update.updatedAt
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: updatesWithTranslations
+    });
+  } catch (error) {
+    console.error('Get Analysis Updates Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get updates'
+    });
+  }
+};
+
+/**
+ * Update a specific update in market analysis
+ * PUT /api/market-analysis/:id/updates/:updateId
+ * Admin only
+ */
+export const updateAnalysisUpdate = async (req, res) => {
+  try {
+    const { id, updateId } = req.params;
+
+    console.log('\n===== UPDATE ANALYSIS UPDATE DEBUG =====');
+    console.log('Analysis ID:', id);
+    console.log('Update ID:', updateId);
+    console.log('Body:', req.body);
+    console.log('Files:', req.files);
+    console.log('========================================\n');
+
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(updateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid ID'
+      });
+    }
+
+    const analysis = await MarketAnalysis.findById(id);
+    if (!analysis) {
+      return res.status(404).json({
+        success: false,
+        error: 'Market analysis not found'
+      });
+    }
+
+    const updateIndex = analysis.updates.findIndex(u => u._id.toString() === updateId);
+    if (updateIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'Update not found'
+      });
+    }
+
+    // Parse translations
+    let title = {};
+    let content = {};
+
+    // Parse title
+    if (typeof req.body.title === 'string') {
+      try {
+        title = JSON.parse(req.body.title);
+      } catch (e) {
+        title = { en: req.body.title };
+      }
+    } else if (typeof req.body.title === 'object') {
+      title = req.body.title;
+    }
+    if (req.body.title_en) title.en = req.body.title_en;
+    if (req.body.title_ar) title.ar = req.body.title_ar;
+    if (req.body['title[en]']) title.en = req.body['title[en]'];
+    if (req.body['title[ar]']) title.ar = req.body['title[ar]'];
+
+    // Parse content
+    if (typeof req.body.content === 'string') {
+      try {
+        content = JSON.parse(req.body.content);
+      } catch (e) {
+        content = { en: req.body.content };
+      }
+    } else if (typeof req.body.content === 'object') {
+      content = req.body.content;
+    }
+    if (req.body.content_en) content.en = req.body.content_en;
+    if (req.body.content_ar) content.ar = req.body.content_ar;
+    if (req.body['content[en]']) content.en = req.body['content[en]'];
+    if (req.body['content[ar]']) content.ar = req.body['content[ar]'];
+
+    // Upload new image if provided
+    if (req.files?.updateImage) {
+      const categoryDoc = await Category.findById(analysis.category);
+      const categorySlug = categoryDoc?.slug || 'uncategorized';
+      
+      const updateImageFile = req.files.updateImage[0];
+      console.log('Uploading new update image...');
+      analysis.updates[updateIndex].image = await bunnycdn.uploadImage(
+        updateImageFile.buffer,
+        updateImageFile.originalname,
+        `market-analysis/${categorySlug}/updates`
+      );
+    }
+
+    // Update date if provided
+    if (req.body.updatedAt && req.body.updatedAt.trim()) {
+      const newDate = new Date(req.body.updatedAt.trim());
+      if (isNaN(newDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid date format for updatedAt. Use ISO 8601 format: YYYY-MM-DDTHH:mm:ssZ'
+        });
+      }
+      analysis.updates[updateIndex].updatedAt = newDate;
+    }
+
+    await analysis.save();
+
+    // Update translations
+    if (title.en || content.en) {
+      await createOrUpdateTranslation(
+        'market-analysis-update',
+        updateId,
+        'en',
+        title.en || '',
+        '',
+        content.en || ''
+      );
+    }
+
+    if (title.ar || content.ar) {
+      await createOrUpdateTranslation(
+        'market-analysis-update',
+        updateId,
+        'ar',
+        title.ar || '',
+        '',
+        content.ar || ''
+      );
+    }
+
+    // Get translations for response
+    const translations = await getTranslationsByEntity('market-analysis-update', updateId);
+    const translationsObject = {};
+    translations.forEach(t => {
+      translationsObject[t.language] = {
+        title: t.title,
+        content: t.content
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Update modified successfully',
+      data: {
+        updateId: analysis.updates[updateIndex]._id,
+        image: analysis.updates[updateIndex].image,
+        updatedAt: analysis.updates[updateIndex].updatedAt,
+        translations: translationsObject
+      }
+    });
+  } catch (error) {
+    console.error('Update Analysis Update Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update analysis update'
+    });
+  }
+};
+
+/**
+ * Delete a specific update from market analysis
+ * DELETE /api/market-analysis/:id/updates/:updateId
+ * Admin only
+ */
+export const deleteAnalysisUpdate = async (req, res) => {
+  try {
+    const { id, updateId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(updateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid ID'
+      });
+    }
+
+    const analysis = await MarketAnalysis.findById(id);
+    if (!analysis) {
+      return res.status(404).json({
+        success: false,
+        error: 'Market analysis not found'
+      });
+    }
+
+    const updateIndex = analysis.updates.findIndex(u => u._id.toString() === updateId);
+    if (updateIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'Update not found'
+      });
+    }
+
+    // Remove update
+    analysis.updates.splice(updateIndex, 1);
+    await analysis.save();
+
+    // Delete translations
+    await deleteTranslationsByEntity('market-analysis-update', updateId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Update deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete Analysis Update Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete update'
     });
   }
 };
@@ -722,6 +1127,43 @@ export const getAnalysisById = async (req, res) => {
     // Get translations
     const translations = await getTranslationsByEntity('market-analysis', analysis._id);
 
+    // Get updates with translations
+    const updatesWithTranslations = await Promise.all(
+      (analysis.updates || []).map(async (update) => {
+        const updateTranslations = await getTranslationsByEntity('market-analysis-update', update._id);
+
+        if (requestMultipleLangs) {
+          const translationsObject = {};
+          updateTranslations.forEach(t => {
+            translationsObject[t.language] = {
+              title: t.title,
+              content: t.content
+            };
+          });
+
+          return {
+            id: update._id,
+            image: update.image,
+            updatedAt: update.updatedAt,
+            translations: translationsObject
+          };
+        }
+
+        // Single language
+        const translation = updateTranslations.find(t => t.language === requestedLang) ||
+                           updateTranslations.find(t => t.language === 'en') ||
+                           updateTranslations[0];
+
+        return {
+          id: update._id,
+          title: translation?.title || '',
+          content: translation?.content || '',
+          image: update.image,
+          updatedAt: update.updatedAt
+        };
+      })
+    );
+
     if (requestMultipleLangs) {
       const translationsObject = {};
       translations.forEach(t => {
@@ -740,7 +1182,7 @@ export const getAnalysisById = async (req, res) => {
           slug: analysis.slug,
           coverImage: analysis.coverImage,
           image: analysis.image,
-          updates: analysis.updates || [],
+          updates: updatesWithTranslations,
           translations: translationsObject,
           updatedAt: analysis.updatedAt,
           createdAt: analysis.createdAt
@@ -764,7 +1206,7 @@ export const getAnalysisById = async (req, res) => {
         content: translation?.content || '',
         coverImage: analysis.coverImage,
         image: analysis.image,
-        updates: analysis.updates || [],
+        updates: updatesWithTranslations,
         updatedAt: analysis.updatedAt,
         createdAt: analysis.createdAt
       }

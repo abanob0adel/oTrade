@@ -78,7 +78,7 @@ app.use('/api/bitcoin', bitcoinRoutes);
 app.use('/api/market-analysis', marketAnalysisRoutes);
 app.use('/api/emails', emailRoutes);
 //app.use('/api/payments', paymentRoutes);
-
+ 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Server is running' });
