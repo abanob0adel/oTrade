@@ -73,7 +73,7 @@ app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/partners', partnerRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/contacts', contactRoutes);
-app.use('/api/contact-us', contactUsRoutes);
+app.use('/api/quick_call', contactUsRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/bitcoin', bitcoinRoutes);

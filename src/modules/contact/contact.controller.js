@@ -27,7 +27,7 @@ export const createContactRequest = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Contact request submitted successfully',
+      message: ' request submitted successfully',
       data: {
         id: contactRequest._id,
         fullName: contactRequest.fullName,
@@ -37,7 +37,7 @@ export const createContactRequest = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Create Contact Request Error:', error);
+    console.error('Create Request Error:', error);
     
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
@@ -50,7 +50,7 @@ export const createContactRequest = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      error: 'Failed to submit contact request'
+      error: 'Failed to submit  request'
     });
   }
 };
@@ -88,10 +88,10 @@ export const getAllContactRequests = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Get Contact Requests Error:', error);
+    console.error('Get  Requests Error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to get contact requests'
+      error: 'Failed to get  requests'
     });
   }
 };
@@ -108,7 +108,7 @@ export const getContactRequestById = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid contact request ID'
+        error: 'Invalid request ID'
       });
     }
 
@@ -117,7 +117,7 @@ export const getContactRequestById = async (req, res) => {
     if (!contactRequest) {
       return res.status(404).json({
         success: false,
-        error: 'Contact request not found'
+        error: ' request not found'
       });
     }
 
@@ -126,10 +126,10 @@ export const getContactRequestById = async (req, res) => {
       data: contactRequest
     });
   } catch (error) {
-    console.error('Get Contact Request Error:', error);
+    console.error('Get Request Error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to get contact request'
+      error: 'Failed to get request'
     });
   }
 };
@@ -146,7 +146,7 @@ export const deleteContactRequest = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid contact request ID'
+        error: 'Invalid request ID'
       });
     }
 
@@ -155,19 +155,19 @@ export const deleteContactRequest = async (req, res) => {
     if (!contactRequest) {
       return res.status(404).json({
         success: false,
-        error: 'Contact request not found'
+        error: ' request not found'
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Contact request deleted successfully'
+      message: ' request deleted successfully'
     });
   } catch (error) {
-    console.error('Delete Contact Request Error:', error);
+    console.error('Delete  Request Error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to delete contact request'
+      error: 'Failed to delete  request'
     });
   }
 };
