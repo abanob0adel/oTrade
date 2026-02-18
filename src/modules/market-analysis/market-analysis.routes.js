@@ -68,8 +68,13 @@ router.get('/single/:slug', getAnalysisBySlug);
 router.get('/:category', pagination(), getAnalysesByCategory);
 router.get('/:category/:slug', getAnalysisBySlug);
 router.post('/', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadImages, createAnalysis);
-router.post('/:id/updates', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadUpdateImage, addAnalysisUpdate);
 router.put('/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'update'), uploadImages, updateAnalysis);
 router.delete('/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'delete'), deleteAnalysis);
+
+// Updates CRUD Routes
+router.get('/updates/:id/all', getAnalysisUpdates);
+router.post('/updates/:id/add', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadUpdateImage, addAnalysisUpdate);
+router.put('/updates/:id/edit/:updateId', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'update'), uploadUpdateImage, updateAnalysisUpdate);
+router.delete('/updates/:id/delete/:updateId', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'delete'), deleteAnalysisUpdate);
 
 export default router;
