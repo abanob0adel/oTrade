@@ -65,11 +65,21 @@ router.delete('/categories/:id', authenticate(['admin', 'super_admin']), checkPe
 
 // Analysis Routes
 router.get('/single/:slug', getAnalysisBySlug);
-router.get('/:category', pagination(), getAnalysesByCategory);
-router.get('/:category/:slug', getAnalysisBySlug);
-router.post('/', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadImages, createAnalysis);
+
+// Updates Routes (must come before /:id to avoid conflict)
+router.get('/:id/updates', getAnalysisUpdates);
 router.post('/:id/updates', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadUpdateImage, addAnalysisUpdate);
+router.put('/:id/updates/:updateId', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'update'), uploadUpdateImage, updateAnalysisUpdate);
+router.delete('/:id/updates/:updateId', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'delete'), deleteAnalysisUpdate);
+
+// Analysis CRUD
+router.get('/:id', getAnalysisById);
+router.post('/', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'create'), uploadImages, createAnalysis);
 router.put('/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'update'), uploadImages, updateAnalysis);
 router.delete('/:id', authenticate(['admin', 'super_admin']), checkPermission('analysis', 'delete'), deleteAnalysis);
+
+// Category-based routes (must come last because they're more generic)
+router.get('/:category', pagination(), getAnalysesByCategory);
+router.get('/:category/:slug', getAnalysisBySlug);
 
 export default router;
