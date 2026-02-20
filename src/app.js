@@ -19,8 +19,8 @@ const corsOptions = {
   ],
   credentials: true,
   optionsSuccessStatus: 200
-};
-
+}; 
+ 
 app.use(cors(corsOptions));
 
 // Middleware
@@ -54,6 +54,7 @@ import uploadRoutes from './routes/upload.routes.js';
 import bitcoinRoutes from './modules/bitcoin/bitcoin.routes.js';
 import marketAnalysisRoutes from './modules/market-analysis/market-analysis.routes.js';
 import emailRoutes from './modules/emails/email.routes.js';
+import newsletterRoutes from './modules/newsletter/newsletter.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/subscriptions', subscriptionRoutes);
@@ -80,6 +81,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/bitcoin', bitcoinRoutes);
 app.use('/api/market-analysis', marketAnalysisRoutes);
 app.use('/api/emails', emailRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 //app.use('/api/payments', paymentRoutes);
  
 // Health check endpoint

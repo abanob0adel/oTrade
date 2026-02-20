@@ -12,7 +12,14 @@
 
 ### Endpoint
 ```
-POST http://localhost:3000/api/market-analysis/:id/updates
+POST http://localhost:3000/api/market-analysis/updates/:id/add
+```
+
+Replace `:id` with the Market Analysis ID.
+
+### Example
+```
+POST http://localhost:3000/api/market-analysis/updates/6991b964918829be5adc430f/add
 ```
 
 ### Headers
@@ -97,7 +104,14 @@ OR
 
 ### Endpoint
 ```
-GET http://localhost:3000/api/market-analysis/:id/updates
+GET http://localhost:3000/api/market-analysis/updates/:id/all
+```
+
+Replace `:id` with the Market Analysis ID.
+
+### Example
+```
+GET http://localhost:3000/api/market-analysis/updates/6991b964918829be5adc430f/all
 ```
 
 ### Headers
@@ -160,7 +174,14 @@ Use header: `Accept-Language: en|ar`
 
 ### Endpoint
 ```
-PUT http://localhost:3000/api/market-analysis/:id/updates/:updateId
+PUT http://localhost:3000/api/market-analysis/updates/:id/edit/:updateId
+```
+
+Replace `:id` with the Market Analysis ID and `:updateId` with the Update ID.
+
+### Example
+```
+PUT http://localhost:3000/api/market-analysis/updates/6991b964918829be5adc430f/edit/65d1234567890abcdef12345
 ```
 
 ### Headers
@@ -231,7 +252,14 @@ updateImage: [SELECT NEW FILE]
 
 ### Endpoint
 ```
-DELETE http://localhost:3000/api/market-analysis/:id/updates/:updateId
+DELETE http://localhost:3000/api/market-analysis/updates/:id/delete/:updateId
+```
+
+Replace `:id` with the Market Analysis ID and `:updateId` with the Update ID.
+
+### Example
+```
+DELETE http://localhost:3000/api/market-analysis/updates/6991b964918829be5adc430f/delete/65d1234567890abcdef12345
 ```
 
 ### Headers
@@ -289,7 +317,7 @@ Response:
 
 ### Step 2: Add First Update
 ```
-POST http://localhost:3000/api/market-analysis/65d9999999999999999999/updates
+POST http://localhost:3000/api/market-analysis/updates/65d9999999999999999999/add
 ```
 Body (form-data):
 ```
@@ -302,7 +330,7 @@ updateImage: [SELECT FILE]
 
 ### Step 3: Add Second Update
 ```
-POST http://localhost:3000/api/market-analysis/65d9999999999999999999/updates
+POST http://localhost:3000/api/market-analysis/updates/65d9999999999999999999/add
 ```
 Body (form-data):
 ```
@@ -323,7 +351,7 @@ Response includes main analysis + all updates with translations
 
 ### Step 5: Update Specific Update
 ```
-PUT http://localhost:3000/api/market-analysis/65d9999999999999999999/updates/65d1111111111111111111
+PUT http://localhost:3000/api/market-analysis/updates/65d9999999999999999999/edit/65d1111111111111111111
 ```
 Body (form-data):
 ```
@@ -333,7 +361,7 @@ content_en: "Gold reached $2080 (corrected)..."
 
 ### Step 6: Delete an Update
 ```
-DELETE http://localhost:3000/api/market-analysis/65d9999999999999999999/updates/65d1111111111111111111
+DELETE http://localhost:3000/api/market-analysis/updates/65d9999999999999999999/delete/65d1111111111111111111
 ```
 
 ---
