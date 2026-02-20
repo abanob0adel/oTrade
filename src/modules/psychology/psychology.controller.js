@@ -361,11 +361,12 @@ const getAllPsychology = async (req, res) => {
       psychologies.map(async (psych) => {
         const translations = await getTranslationsByEntity('psychology', psych._id);
 
-        // نفس الكود القديم بس ضفنا key
         const formatted = formatAdminResponse(psych, translations);
         return {
           ...formatted,
-          key: psych.key // 👈 هنا ضفنا key
+          key: psych.key,
+          file: psych.fileUrl || null,
+          video: psych.videoUrl || null
         };
       })
     );
