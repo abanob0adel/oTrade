@@ -54,17 +54,29 @@ import mongoose from 'mongoose';
 
     // ===== Type-specific =====
     if (key === 'book') {
-      if (req.files?.file) {
-        fileUrl = await uploadFile(req.files.file[0], 'psychology/books');
-      } else {
-        return res.status(400).json({ error: 'PDF file is required for book' });
+      fileUrl = req.body.file?.trim();
+      if (!fileUrl) {
+        return res.status(400).json({ error: 'File URL is required for book' });
+      }
+      
+      // Validate URL format
+      const urlValidation = validateContentUrl(fileUrl);
+      if (!urlValidation.valid) {
+        return res.status(400).json({ error: urlValidation.error });
       }
     }
 
     if (key === 'video') {
       videoUrl = req.body.videoUrl?.trim();
-      if (!videoUrl)
+      if (!videoUrl) {
         return res.status(400).json({ error: 'Video URL is required' });
+      }
+      
+      // Validate URL format
+      const urlValidation = validateContentUrl(videoUrl);
+      if (!urlValidation.valid) {
+        return res.status(400).json({ error: urlValidation.error });
+      }
     }
 
     // ===== Cover Image =====
@@ -186,12 +198,12 @@ const updatePsychology = async (req, res) => {
     /* ================= FILE ================= */
     let fileUrl = psychology.fileUrl;
 
-    if (req.files?.file && (psychology.key === 'book' || key === 'book')) {
-      const file = req.files.file[0];
-      if (file.mimetype !== 'application/pdf') {
-        return res.status(400).json({ error: 'Only PDF files are allowed' });
+    if (req.body.file) {
+      const urlValidation = validateContentUrl(req.body.file.trim());
+      if (!urlValidation.valid) {
+        return res.status(400).json({ error: urlValidation.error });
       }
-      fileUrl = await uploadFile(file, 'psychology/books');
+      fileUrl = req.body.file.trim();
     }
 
     /* ================= COVER ================= */

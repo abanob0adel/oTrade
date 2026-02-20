@@ -1,5 +1,6 @@
 import Webinar from './webinar.model.js';
 import WebinarRegistration from './webinar.registration.model.js';
+import Translation from '../translations/translation.model.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../utils/response.js';
 import { uploadImage } from '../../utils/cloudinary.js';
 import mongoose from 'mongoose';
