@@ -19,7 +19,8 @@ const translationSchema = new mongoose.Schema({
       'bitcoin',
       'market-analysis',
       'market-category',
-      'market-analysis-update'
+      'market-analysis-update',
+      'about'
     ],
     required: true
   },
