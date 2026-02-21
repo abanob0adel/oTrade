@@ -21,7 +21,8 @@ const translationSchema = new mongoose.Schema({
       'market-category',
       'market-analysis-update',
       'about-settings',
-      'about-team'
+      'about-team',
+      'partner'
     ],
     required: true
   },

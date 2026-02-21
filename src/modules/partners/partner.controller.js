@@ -1,169 +1,345 @@
 import Partner from './partner.model.js';
-import { uploadImage } from '../../utils/cloudinary.js'; // Assuming cloudinary utility exists
+import bunnycdn from '../../utils/bunnycdn.js';
 import mongoose from 'mongoose';
+import { createOrUpdateTranslation, getTranslationsByEntity, deleteTranslationsByEntity } from '../translations/translation.service.js';
 
 /**
- * Create a new partner
- * POST /api/v1/partners
+ * Create Partner
+ * POST /api/partners
+ * Admin only
  */
 export const createPartner = async (req, res) => {
   try {
-    console.log('=== CREATE PARTNER DEBUG ===');
-    console.log('Request Body:', req.body);
+    console.log('\n===== CREATE PARTNER DEBUG =====');
+    console.log('Body:', req.body);
     console.log('Files:', req.files);
+    console.log('================================\n');
 
-    let logo;
+    const { category, websiteUrl, order } = req.body;
 
-    // Handle logo upload
-    if (req.files?.logo && req.files.logo[0]) {
-      const logoFile = req.files.logo[0];
-      logo = await uploadImage(logoFile, 'partners');
-    } else if (req.body.logo?.startsWith('data:image')) {
-      logo = await uploadImage(req.body.logo, 'partners');
-    } else {
-      logo = req.body.logo;
-    }
-
-    if (!logo) {
+    // Validate category
+    if (!category || !['people', 'company'].includes(category)) {
       return res.status(400).json({
         success: false,
-        message: 'Logo is required.'
+        error: 'Valid category is required (people or company)'
       });
     }
 
-    const { name, websiteUrl, isPremium } = req.body;
+    // Parse title and description translations
+    let title = {};
+    let description = {};
+
+    // Parse title
+    if (typeof req.body.title === 'string') {
+      try {
+        title = JSON.parse(req.body.title);
+      } catch (e) {
+        title = { en: req.body.title };
+      }
+    } else if (typeof req.body.title === 'object') {
+      title = req.body.title;
+    }
+    if (req.body.title_en) title.en = req.body.title_en;
+    if (req.body.title_ar) title.ar = req.body.title_ar;
+    if (req.body['title[en]']) title.en = req.body['title[en]'];
+    if (req.body['title[ar]']) title.ar = req.body['title[ar]'];
+
+    // Parse description
+    if (typeof req.body.description === 'string') {
+      try {
+        description = JSON.parse(req.body.description);
+      } catch (e) {
+        description = { en: req.body.description };
+      }
+    } else if (typeof req.body.description === 'object') {
+      description = req.body.description;
+    }
+    if (req.body.description_en) description.en = req.body.description_en;
+    if (req.body.description_ar) description.ar = req.body.description_ar;
+    if (req.body['description[en]']) description.en = req.body['description[en]'];
+    if (req.body['description[ar]']) description.ar = req.body['description[ar]'];
 
     // Validate required fields
-    if (!name?.trim()) {
+    if (!title.en && !title.ar) {
       return res.status(400).json({
         success: false,
-        message: 'Name is required.'
+        error: 'Title is required in at least one language'
       });
     }
 
-    // Validate URL if provided
-    if (websiteUrl && websiteUrl.trim()) {
-      const urlRegex = /^(ftp|http|https):\/\/[^ "]+$/;
-      if (!urlRegex.test(websiteUrl.trim())) {
-        return res.status(400).json({
-          success: false,
-          message: 'Website URL is not valid.'
-        });
+    if (!description.en && !description.ar) {
+      return res.status(400).json({
+        success: false,
+        error: 'Description is required in at least one language'
+      });
+    }
+
+    // Validate image
+    if (!req.files?.image) {
+      return res.status(400).json({
+        success: false,
+        error: 'Image is required'
+      });
+    }
+
+    // Upload image
+    const imageFile = req.files.image[0];
+    const imageUrl = await bunnycdn.uploadImage(imageFile.buffer, imageFile.originalname, `partners/${category}`);
+
+    // Parse links
+    let links = [];
+    if (req.body.links) {
+      try {
+        links = typeof req.body.links === 'string' ? JSON.parse(req.body.links) : req.body.links;
+        if (!Array.isArray(links)) links = [];
+      } catch (e) {
+        links = [];
       }
     }
 
-    const partner = new Partner({
-      logo,
-      name: name.trim(),
-      websiteUrl: websiteUrl?.trim(),
-      isPremium: isPremium === 'true' || isPremium === true || isPremium === '1'
+    // Create partner
+    const partner = await Partner.create({
+      category,
+      image: imageUrl,
+      websiteUrl: websiteUrl?.trim() || '',
+      links: links,
+      order: order || 0
     });
 
-    await partner.save();
+    // Save translations (title and description)
+    if (title.en || description.en) {
+      await createOrUpdateTranslation(
+        'partner',
+        partner._id,
+        'en',
+        title.en || '',
+        description.en || '',
+        ''
+      );
+    }
+
+    if (title.ar || description.ar) {
+      await createOrUpdateTranslation(
+        'partner',
+        partner._id,
+        'ar',
+        title.ar || '',
+        description.ar || '',
+        ''
+      );
+    }
+
+    // Get translations for response
+    const translations = await getTranslationsByEntity('partner', partner._id);
+    const translationsObject = {};
+    translations.forEach(t => {
+      translationsObject[t.language] = {
+        title: t.title,
+        description: t.description
+      };
+    });
 
     res.status(201).json({
       success: true,
       message: 'Partner created successfully',
-      data: partner
+      data: {
+        id: partner._id,
+        category: partner.category,
+        image: partner.image,
+        websiteUrl: partner.websiteUrl,
+        links: partner.links,
+        order: partner.order,
+        translations: translationsObject,
+        isActive: partner.isActive,
+        createdAt: partner.createdAt,
+        updatedAt: partner.updatedAt
+      }
     });
-
   } catch (error) {
-    console.error('Error creating partner:', error);
+    console.error('Create Partner Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      error: 'Failed to create partner'
     });
   }
 };
 
 /**
- * Get all partners
- * GET /api/v1/partners
+ * Get All Partners
+ * GET /api/partners
+ * Public
  */
 export const getAllPartners = async (req, res) => {
   try {
-    const { isPremium } = req.query;
+    const { category } = req.query;
+    const requestedLang = req.get('Accept-Language') || 'en';
+    const requestMultipleLangs = requestedLang.includes('|');
 
-    let filter = {};
-
-    // Apply isPremium filter if provided
-    if (isPremium !== undefined) {
-      filter.isPremium = isPremium === 'true' || isPremium === true || isPremium === '1';
+    const filter = { isActive: true };
+    if (category && ['people', 'company'].includes(category)) {
+      filter.category = category;
     }
 
-    const partners = await Partner.find(filter).sort({ createdAt: -1 });
+    const partners = await Partner.find(filter).sort({ order: 1, createdAt: 1 });
+
+    const partnersWithTranslations = await Promise.all(
+      partners.map(async (partner) => {
+        const translations = await getTranslationsByEntity('partner', partner._id);
+
+        if (requestMultipleLangs) {
+          const translationsObject = {};
+          translations.forEach(t => {
+            translationsObject[t.language] = {
+              title: t.title,
+              description: t.description
+            };
+          });
+
+          return {
+            id: partner._id,
+            category: partner.category,
+            image: partner.image,
+            websiteUrl: partner.websiteUrl,
+            links: partner.links,
+            order: partner.order,
+            translations: translationsObject
+          };
+        }
+
+        // Single language
+        const translation = translations.find(t => t.language === requestedLang) ||
+                           translations.find(t => t.language === 'en') ||
+                           translations[0];
+
+        return {
+          id: partner._id,
+          category: partner.category,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          image: partner.image,
+          websiteUrl: partner.websiteUrl,
+          links: partner.links,
+          order: partner.order
+        };
+      })
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Partners retrieved successfully',
-      data: {
-        partners,
-        count: partners.length
-      }
+      data: partnersWithTranslations
     });
-
   } catch (error) {
-    console.error('Error fetching partners:', error);
+    console.error('Get Partners Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      error: 'Failed to get partners'
     });
   }
 };
 
 /**
- * Get partner by ID
- * GET /api/v1/partners/:id
+ * Get Partner by ID
+ * GET /api/partners/:id
+ * Public
  */
 export const getPartnerById = async (req, res) => {
   try {
     const { id } = req.params;
+    const requestedLang = req.get('Accept-Language') || 'en';
+    const requestMultipleLangs = requestedLang.includes('|');
 
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid partner ID.'
+        error: 'Invalid partner ID'
       });
     }
 
-    const partner = await Partner.findById(id);
+    const partner = await Partner.findOne({ _id: id, isActive: true });
 
     if (!partner) {
       return res.status(404).json({
         success: false,
-        message: 'Partner not found.'
+        error: 'Partner not found'
       });
     }
 
+    // Get translations
+    const translations = await getTranslationsByEntity('partner', partner._id);
+
+    if (requestMultipleLangs) {
+      const translationsObject = {};
+      translations.forEach(t => {
+        translationsObject[t.language] = {
+          title: t.title,
+          description: t.description
+        };
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: partner._id,
+          category: partner.category,
+          image: partner.image,
+          websiteUrl: partner.websiteUrl,
+          links: partner.links,
+          order: partner.order,
+          translations: translationsObject,
+          createdAt: partner.createdAt,
+          updatedAt: partner.updatedAt
+        }
+      });
+    }
+
+    // Single language
+    const translation = translations.find(t => t.language === requestedLang) ||
+                       translations.find(t => t.language === 'en') ||
+                       translations[0];
+
     res.status(200).json({
       success: true,
-      message: 'Partner retrieved successfully',
-      data: partner
+      data: {
+        id: partner._id,
+        category: partner.category,
+        title: translation?.title || '',
+        description: translation?.description || '',
+        image: partner.image,
+        websiteUrl: partner.websiteUrl,
+        links: partner.links,
+        order: partner.order,
+        createdAt: partner.createdAt,
+        updatedAt: partner.updatedAt
+      }
     });
-
   } catch (error) {
-    console.error('Error fetching partner:', error);
+    console.error('Get Partner Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      error: 'Failed to get partner'
     });
   }
 };
 
 /**
- * Update partner
- * PATCH /api/v1/partners/:id
+ * Update Partner
+ * PUT /api/partners/:id
+ * Admin only
  */
 export const updatePartner = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ObjectId
+    console.log('\n===== UPDATE PARTNER DEBUG =====');
+    console.log('ID:', id);
+    console.log('Body:', req.body);
+    console.log('Files:', req.files);
+    console.log('================================\n');
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid partner ID.'
+        error: 'Invalid partner ID'
       });
     }
 
@@ -172,90 +348,145 @@ export const updatePartner = async (req, res) => {
     if (!partner) {
       return res.status(404).json({
         success: false,
-        message: 'Partner not found.'
+        error: 'Partner not found'
       });
     }
 
-    let logo = partner.logo; // Keep existing logo if not updated
+    // Parse title and description translations
+    let title = {};
+    let description = {};
 
-    // Handle logo update if provided
-    if (req.files?.logo && req.files.logo[0]) {
-      const logoFile = req.files.logo[0];
-      logo = await uploadImage(logoFile, 'partners');
-    } else if (req.body.logo?.startsWith('data:image')) {
-      logo = await uploadImage(req.body.logo, 'partners');
-    } else if (req.body.logo !== undefined) {
-      logo = req.body.logo;
-    }
-
-    const updateData = {};
-
-    // Update fields if provided
-    if (req.body.name !== undefined) {
-      if (!req.body.name?.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Name is required.'
-        });
+    // Parse title
+    if (typeof req.body.title === 'string') {
+      try {
+        title = JSON.parse(req.body.title);
+      } catch (e) {
+        title = { en: req.body.title };
       }
-      updateData.name = req.body.name.trim();
+    } else if (typeof req.body.title === 'object') {
+      title = req.body.title;
     }
+    if (req.body.title_en) title.en = req.body.title_en;
+    if (req.body.title_ar) title.ar = req.body.title_ar;
+    if (req.body['title[en]']) title.en = req.body['title[en]'];
+    if (req.body['title[ar]']) title.ar = req.body['title[ar]'];
 
-    if (req.body.websiteUrl !== undefined) {
-      if (req.body.websiteUrl && req.body.websiteUrl.trim()) {
-        const urlRegex = /^(ftp|http|https):\/\/[^ "]+$/;
-        if (!urlRegex.test(req.body.websiteUrl.trim())) {
-          return res.status(400).json({
-            success: false,
-            message: 'Website URL is not valid.'
-          });
-        }
+    // Parse description
+    if (typeof req.body.description === 'string') {
+      try {
+        description = JSON.parse(req.body.description);
+      } catch (e) {
+        description = { en: req.body.description };
       }
-      updateData.websiteUrl = req.body.websiteUrl?.trim();
+    } else if (typeof req.body.description === 'object') {
+      description = req.body.description;
+    }
+    if (req.body.description_en) description.en = req.body.description_en;
+    if (req.body.description_ar) description.ar = req.body.description_ar;
+    if (req.body['description[en]']) description.en = req.body['description[en]'];
+    if (req.body['description[ar]']) description.ar = req.body['description[ar]'];
+
+    // Update translations
+    if (title.en || description.en) {
+      await createOrUpdateTranslation(
+        'partner',
+        partner._id,
+        'en',
+        title.en || '',
+        description.en || '',
+        ''
+      );
     }
 
-    if (req.body.isPremium !== undefined) {
-      updateData.isPremium = req.body.isPremium === 'true' || req.body.isPremium === true || req.body.isPremium === '1';
+    if (title.ar || description.ar) {
+      await createOrUpdateTranslation(
+        'partner',
+        partner._id,
+        'ar',
+        title.ar || '',
+        description.ar || '',
+        ''
+      );
     }
 
-    if (logo) {
-      updateData.logo = logo;
+    // Update other fields
+    if (req.body.category && ['people', 'company'].includes(req.body.category)) {
+      partner.category = req.body.category;
+    }
+    if (req.body.websiteUrl !== undefined) partner.websiteUrl = req.body.websiteUrl.trim();
+    if (req.body.order !== undefined) partner.order = req.body.order;
+
+    // Parse and update links
+    if (req.body.links !== undefined) {
+      try {
+        const links = typeof req.body.links === 'string' ? JSON.parse(req.body.links) : req.body.links;
+        partner.links = Array.isArray(links) ? links : [];
+      } catch (e) {
+        partner.links = [];
+      }
     }
 
-    const updatedPartner = await Partner.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    // Upload new image if provided
+    if (req.files?.image) {
+      const imageFile = req.files.image[0];
+      partner.image = await bunnycdn.uploadImage(imageFile.buffer, imageFile.originalname, `partners/${partner.category}`);
+    }
+
+    if (req.body.isActive !== undefined) {
+      partner.isActive = req.body.isActive;
+    }
+
+    partner.updatedAt = new Date();
+    await partner.save();
+
+    // Get translations for response
+    const translations = await getTranslationsByEntity('partner', partner._id);
+    const translationsObject = {};
+    translations.forEach(t => {
+      translationsObject[t.language] = {
+        title: t.title,
+        description: t.description
+      };
+    });
 
     res.status(200).json({
       success: true,
       message: 'Partner updated successfully',
-      data: updatedPartner
+      data: {
+        id: partner._id,
+        category: partner.category,
+        image: partner.image,
+        websiteUrl: partner.websiteUrl,
+        links: partner.links,
+        order: partner.order,
+        translations: translationsObject,
+        isActive: partner.isActive,
+        createdAt: partner.createdAt,
+        updatedAt: partner.updatedAt
+      }
     });
-
   } catch (error) {
-    console.error('Error updating partner:', error);
+    console.error('Update Partner Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      error: 'Failed to update partner'
     });
   }
 };
 
 /**
- * Delete partner
- * DELETE /api/v1/partners/:id
+ * Delete Partner
+ * DELETE /api/partners/:id
+ * Admin only
  */
 export const deletePartner = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid partner ID.'
+        error: 'Invalid partner ID'
       });
     }
 
@@ -264,23 +495,25 @@ export const deletePartner = async (req, res) => {
     if (!partner) {
       return res.status(404).json({
         success: false,
-        message: 'Partner not found.'
+        error: 'Partner not found'
       });
     }
 
+    // Delete translations
+    await deleteTranslationsByEntity('partner', partner._id);
+
+    // Delete partner
     await Partner.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
-      message: 'Partner deleted successfully',
-      data: null
+      message: 'Partner deleted successfully'
     });
-
   } catch (error) {
-    console.error('Error deleting partner:', error);
+    console.error('Delete Partner Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      error: 'Failed to delete partner'
     });
   }
 };
