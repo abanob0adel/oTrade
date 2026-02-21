@@ -1,48 +1,64 @@
 import express from 'express';
 import {
-  createAboutItem,
-  getAllAboutItems,
-  getAboutItemById,
-  updateAboutItem,
-  deleteAboutItem
+  // Settings
+  createOrUpdateSettings,
+  getSettingsByKey,
+  getAllSettings,
+  // Team
+  createTeamMember,
+  getAllTeamMembers,
+  getTeamMemberById,
+  updateTeamMember,
+  deleteTeamMember
 } from './about.controller.js';
 import { authenticate, checkPermission } from '../../middlewares/rbac.middleware.js';
-import multer from 'multer';
+import upload from '../../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
-// Multer configuration
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage: storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  },
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
-  }
-});
-
-const uploadImage = upload.fields([
-  { name: 'image', maxCount: 1 }
-]);
-
-/**
- * About Routes
- * Base URL: /api/about
- */
+// ==================== SETTINGS ROUTES ====================
 
 // Public routes
-router.get('/', getAllAboutItems);
-router.get('/:id', getAboutItemById);
+router.get('/settings', getAllSettings);
+router.get('/settings/:key', getSettingsByKey);
+
+// Admin routes - POST creates or updates automatically
+router.post(
+  '/settings',
+  authenticate(['admin', 'super_admin']),
+  checkPermission('support', 'create'),
+  upload.none(), // Parse form-data without files
+  createOrUpdateSettings
+);
+
+// ==================== TEAM ROUTES ====================
+
+// Public routes
+router.get('/team', getAllTeamMembers);
+router.get('/team/:id', getTeamMemberById);
 
 // Admin routes
-router.post('/', authenticate(['admin', 'super_admin']), checkPermission('support', 'create'), uploadImage, createAboutItem);
-router.put('/:id', authenticate(['admin', 'super_admin']), checkPermission('support', 'update'), uploadImage, updateAboutItem);
-router.delete('/:id', authenticate(['admin', 'super_admin']), checkPermission('support', 'delete'), deleteAboutItem);
+router.post(
+  '/team',
+  authenticate(['admin', 'super_admin']),
+  checkPermission('support', 'create'),
+  upload.fields([{ name: 'image', maxCount: 1 }]),
+  createTeamMember
+);
+
+router.put(
+  '/team/:id',
+  authenticate(['admin', 'super_admin']),
+  checkPermission('support', 'update'),
+  upload.fields([{ name: 'image', maxCount: 1 }]),
+  updateTeamMember
+);
+
+router.delete(
+  '/team/:id',
+  authenticate(['admin', 'super_admin']),
+  checkPermission('support', 'delete'),
+  deleteTeamMember
+);
 
 export default router;

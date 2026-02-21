@@ -1,14 +1,37 @@
 import mongoose from 'mongoose';
 
-const aboutSchema = new mongoose.Schema({
+// Settings Model - for general content with key (vision, mission, about, etc.)
+const settingsSchema = new mongoose.Schema({
   key: {
     type: String,
-    enum: ['vision', 'team'],
-    required: true
+    required: true,
+    unique: true,
+    trim: true
   },
-  // Team fields (not translated)
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true
+});
+
+settingsSchema.index({ key: 1 });
+settingsSchema.index({ isActive: 1 });
+
+// Team Model - for team members
+const teamSchema = new mongoose.Schema({
   image: {
     type: String,
+    required: true,
     trim: true
   },
   linkedIn: {
@@ -35,10 +58,8 @@ const aboutSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for key and order
-aboutSchema.index({ key: 1, order: 1 });
-aboutSchema.index({ isActive: 1 });
+teamSchema.index({ order: 1 });
+teamSchema.index({ isActive: 1 });
 
-const About = mongoose.model('About', aboutSchema);
-
-export default About;
+export const Settings = mongoose.model('Settings', settingsSchema);
+export const Team = mongoose.model('Team', teamSchema);

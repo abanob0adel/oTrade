@@ -20,7 +20,8 @@ const translationSchema = new mongoose.Schema({
       'market-analysis',
       'market-category',
       'market-analysis-update',
-      'about'
+      'about-settings',
+      'about-team'
     ],
     required: true
   },
