@@ -138,72 +138,67 @@ const forgotPassword = async (email) => {
   if (!user) {
     // Don't reveal if email exists for security
     return {
-      message: 'If your email is registered, you will receive a password reset link'
+      message: 'If your email is registered, you will receive a password reset code'
     };
   }
   
-  // Generate reset token
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  // Generate 4-digit code
+  const resetCode = Math.floor(1000 + Math.random() * 9000).toString();
   
-  // Save hashed token and expiry (1 hour)
-  user.resetPasswordToken = hashedToken;
-  user.resetPasswordExpiry = Date.now() + 3600000; // 1 hour
+  // Save code and expiry (10 minutes)
+  user.resetPasswordCode = resetCode;
+  user.resetPasswordExpiry = Date.now() + 600000; // 10 minutes
   await user.save();
   
-  // Send password reset email
+  // Send password reset email with code
   try {
-    await sendPasswordResetEmail(user.email, resetToken, user.name);
-    console.log(`✅ Password reset email sent to: ${user.email}`);
+    await sendPasswordResetEmail(user.email, resetCode, user.name);
+    console.log(`✅ Password reset code sent to: ${user.email}`);
   } catch (error) {
     console.error(`❌ Failed to send email to ${user.email}:`, error.message);
-    // Continue anyway - token is saved in DB
+    // Continue anyway - code is saved in DB
   }
   
-  // Log reset URL for development
+  // Log reset code for development
   if (process.env.NODE_ENV === 'development') {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
-    console.log(`🔐 Password reset URL: ${resetUrl}`);
+    console.log(`🔐 Password reset code: ${resetCode}`);
   }
   
   return {
-    message: 'Password reset link sent to your email',
+    message: 'Password reset code sent to your email',
     // For development only - remove in production
-    ...(process.env.NODE_ENV === 'development' && { resetToken })
+    ...(process.env.NODE_ENV === 'development' && { resetCode })
   };
 };
 
 /**
- * 🔄 Reset password with token
+ * 🔄 Reset password with code
  */
-const resetPassword = async (token, newPassword) => {
-  if (!token || !newPassword) {
-    throw new Error('Token and new password are required');
+const resetPassword = async (code, newPassword) => {
+  if (!code || !newPassword) {
+    throw new Error('Code and new password are required');
   }
   
   if (newPassword.length < 6) {
     throw new Error('Password must be at least 6 characters');
   }
   
-  // Hash the token to compare with stored hash
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-  
-  // Find user with valid token
+  // Find user with valid code
   const user = await User.findOne({
-    resetPasswordToken: hashedToken,
+    resetPasswordCode: code,
     resetPasswordExpiry: { $gt: Date.now() }
   });
   
   if (!user) {
-    throw new Error('Invalid or expired reset token');
+    throw new Error('Invalid or expired reset code');
   }
   
   // Hash new password
   const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
   
-  // Update password and clear reset token
+  // Update password and clear reset code
   user.password = hashedPassword;
-  user.resetPasswordToken = undefined;
+  user.resetPasswordCode = undefined;
   user.resetPasswordExpiry = undefined;
   await user.save();
   

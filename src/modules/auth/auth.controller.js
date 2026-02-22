@@ -55,8 +55,8 @@ const forgotPasswordController = async (req, res) => {
  */
 const resetPasswordController = async (req, res) => {
   try {
-    const { token, password } = req.body;
-    const result = await resetPassword(token, password);
+    const { code, password } = req.body;
+    const result = await resetPassword(code, password);
     handleResponse(res, 200, result);
   } catch (error) {
     handleError(res, 400, error.message);
@@ -98,24 +98,50 @@ const updateProfileController = async (req, res) => {
  * 📸 Upload Profile Image Controller
  * POST /api/auth/profile/image
  */
-
-
 const uploadProfileImageController = async (req, res) => {
   try {
     const userId = req.auth.id;
-    const { profileImage } = req.body;
     
-    if (!profileImage) {
+    // Check if file was uploaded (support any field name)
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Profile image URL is required'
+        error: 'Profile image is required'
       });
     }
 
+    const file = req.files[0]; // Get first file regardless of field name
 
-    const result = await updateProfile(userId, { profileImage });
-    handleResponse(res, 200, result);
+    // Validate it's an image
+    if (!file.mimetype.startsWith('image/')) {
+      return res.status(400).json({
+        success: false,
+        error: 'File must be an image'
+      });
+    }
+
+    // Import BunnyCDN service
+    const bunnyCDN = (await import('../../utils/bunnycdn.js')).default;
+    
+    // Upload to BunnyCDN - returns URL string
+    const imageUrl = await bunnyCDN.uploadFile(
+      file.buffer,
+      file.originalname,
+      'profiles'
+    );
+
+    // Update user profile with new image URL
+    const result = await updateProfile(userId, { profileImage: imageUrl });
+    
+    handleResponse(res, 200, {
+      ...result,
+      uploadedFile: {
+        url: imageUrl,
+        fileName: file.originalname
+      }
+    });
   } catch (error) {
+    console.error('Upload Profile Image Error:', error);
     handleError(res, 400, error.message);
   }
 };

@@ -85,7 +85,6 @@ app.use('/api/emails', emailRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/about', aboutRoutes);
 //app.use('/api/payments', paymentRoutes);
- 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Server is running' });

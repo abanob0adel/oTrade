@@ -10,6 +10,7 @@ import {
 } from './auth.controller.js';
 import { getCurrentUserPermissions, getAllPermissions } from './rbac.controller.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
+import upload from '../../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -72,10 +73,9 @@ router.put('/profile', authenticate, updateProfile);
  * @route   POST /api/auth/profile/image
  * @desc    Upload profile image
  * @access  Private
- * @body    { profileImage }
+ * @body    FormData with 'profileImage' or 'image' field
  */
-
-router.post('/profile/image', authenticate, uploadProfileImage);
+router.post('/profile/image', authenticate, upload.any(), uploadProfileImage);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // RBAC Endpoints

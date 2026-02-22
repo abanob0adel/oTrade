@@ -48,7 +48,7 @@ const userSchema = new mongoose.Schema({
     endDate: Date
   },
   // Password reset fields
-  resetPasswordToken: {
+  resetPasswordCode: {
     type: String,
     select: false
   },
@@ -63,8 +63,8 @@ const userSchema = new mongoose.Schema({
 // Create index on email for faster lookups
 userSchema.index({ email: 1 });
 
-// Create index on reset token for faster lookups
-userSchema.index({ resetPasswordToken: 1 });
+// Create index on reset code for faster lookups
+userSchema.index({ resetPasswordCode: 1 });
 
 const User = mongoose.model('User', userSchema);
 
