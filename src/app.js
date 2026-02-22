@@ -73,7 +73,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/testimonials', testimonialRoutes);
-app.use('/api/partners', partnerRoutes);
+app.use('/api/v1/partners', partnerRoutes); // Our Partners (new system with translations)
 app.use('/api/news', newsRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/quick_call', contactUsRoutes);

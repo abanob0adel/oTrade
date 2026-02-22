@@ -21,7 +21,7 @@
 
 ### Endpoint
 ```
-POST http://localhost:3000/api/partners
+POST http://localhost:3000/api/v1/partners
 ```
 
 ### Headers
@@ -98,7 +98,7 @@ image: [SELECT FILE]
 
 ### Endpoint
 ```
-POST http://localhost:3000/api/partners
+POST http://localhost:3000/api/v1/partners
 ```
 
 ### Headers
@@ -164,7 +164,7 @@ image: [SELECT FILE]
 
 ### Endpoint
 ```
-GET http://localhost:3000/api/partners
+GET http://localhost:3000/api/v1/partners
 ```
 
 ### Headers
@@ -179,9 +179,9 @@ category=people  (or category=company to filter by type)
 
 ### Examples
 ```
-GET http://localhost:3000/api/partners
-GET http://localhost:3000/api/partners?category=people
-GET http://localhost:3000/api/partners?category=company
+GET http://localhost:3000/api/v1/partners
+GET http://localhost:3000/api/v1/partners?category=people
+GET http://localhost:3000/api/v1/partners?category=company
 ```
 
 ### Response (Success - 200) - English
@@ -229,7 +229,7 @@ GET http://localhost:3000/api/partners?category=company
 
 ### Endpoint
 ```
-GET http://localhost:3000/api/partners
+GET http://localhost:3000/api/v1/partners
 ```
 
 ### Headers
@@ -275,7 +275,7 @@ Accept-Language: en|ar
 
 ### Endpoint
 ```
-GET http://localhost:3000/api/partners/:id
+GET http://localhost:3000/api/v1/partners/:id
 ```
 
 ### Headers
@@ -285,7 +285,7 @@ Accept-Language: ar
 
 ### Example
 ```
-GET http://localhost:3000/api/partners/65d1234567890abcdef12345
+GET http://localhost:3000/api/v1/partners/65d1234567890abcdef12345
 ```
 
 ### Response (Success - 200) - Arabic
@@ -318,7 +318,7 @@ GET http://localhost:3000/api/partners/65d1234567890abcdef12345
 
 ### Endpoint
 ```
-GET http://localhost:3000/api/partners/:id
+GET http://localhost:3000/api/v1/partners/:id
 ```
 
 ### Headers
@@ -364,7 +364,7 @@ Accept-Language: en|ar
 
 ### Endpoint
 ```
-PUT http://localhost:3000/api/partners/:id
+PUT http://localhost:3000/api/v1/partners/:id
 ```
 
 ### Headers
@@ -438,7 +438,7 @@ image: [SELECT NEW FILE]
 
 ### Endpoint
 ```
-DELETE http://localhost:3000/api/partners/:id
+DELETE http://localhost:3000/api/v1/partners/:id
 ```
 
 ### Headers
@@ -448,7 +448,7 @@ Authorization: Bearer YOUR_ADMIN_TOKEN
 
 ### Example
 ```
-DELETE http://localhost:3000/api/partners/65d1234567890abcdef12345
+DELETE http://localhost:3000/api/v1/partners/65d1234567890abcdef12345
 ```
 
 ### Response (Success - 200)
@@ -465,7 +465,7 @@ DELETE http://localhost:3000/api/partners/65d1234567890abcdef12345
 
 ### Step 1: Create Person Partner
 ```
-POST http://localhost:3000/api/partners
+POST http://localhost:3000/api/v1/partners
 Authorization: Bearer ADMIN_TOKEN
 ```
 Form-data:
@@ -483,7 +483,7 @@ image: [FILE]
 
 ### Step 2: Create Company Partner
 ```
-POST http://localhost:3000/api/partners
+POST http://localhost:3000/api/v1/partners
 Authorization: Bearer ADMIN_TOKEN
 ```
 Form-data:
@@ -501,37 +501,37 @@ image: [FILE]
 
 ### Step 3: Get All Partners in English
 ```
-GET http://localhost:3000/api/partners
+GET http://localhost:3000/api/v1/partners
 Accept-Language: en
 ```
 
 ### Step 4: Get All Partners in Arabic
 ```
-GET http://localhost:3000/api/partners
+GET http://localhost:3000/api/v1/partners
 Accept-Language: ar
 ```
 
 ### Step 5: Get Only People Partners
 ```
-GET http://localhost:3000/api/partners?category=people
+GET http://localhost:3000/api/v1/partners?category=people
 Accept-Language: en
 ```
 
 ### Step 6: Get Only Company Partners
 ```
-GET http://localhost:3000/api/partners?category=company
+GET http://localhost:3000/api/v1/partners?category=company
 Accept-Language: ar
 ```
 
 ### Step 7: Get All Partners (Both Languages)
 ```
-GET http://localhost:3000/api/partners
+GET http://localhost:3000/api/v1/partners
 Accept-Language: en|ar
 ```
 
 ### Step 8: Update Partner
 ```
-PUT http://localhost:3000/api/partners/65d1234567890abcdef12345
+PUT http://localhost:3000/api/v1/partners/65d1234567890abcdef12345
 Authorization: Bearer ADMIN_TOKEN
 ```
 Body:
@@ -651,7 +651,7 @@ Returns all partners with both translations
 
 ### Create Partner
 ```bash
-curl -X POST http://localhost:3000/api/partners \
+curl -X POST http://localhost:3000/api/v1/partners \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -F "category=people" \
   -F "title_en=Ahmed Mohamed" \
@@ -666,13 +666,13 @@ curl -X POST http://localhost:3000/api/partners \
 
 ### Get All Partners in English
 ```bash
-curl -X GET http://localhost:3000/api/partners \
+curl -X GET http://localhost:3000/api/v1/partners \
   -H "Accept-Language: en"
 ```
 
 ### Get People Partners Only
 ```bash
-curl -X GET "http://localhost:3000/api/partners?category=people" \
+curl -X GET "http://localhost:3000/api/v1/partners?category=people" \
   -H "Accept-Language: ar"
 ```
 
