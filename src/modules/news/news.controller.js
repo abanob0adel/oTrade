@@ -124,6 +124,7 @@ export const getAllNews = async (req, res) => {
   try {
     console.log('=== GET ALL NEWS DEBUG ===');
     console.log('Query params:', req.query);
+    console.log('Accept-Language header:', req.headers['accept-language']);
 
     const { startDate, endDate } = req.query;
 
@@ -133,6 +134,8 @@ export const getAllNews = async (req, res) => {
       .split('|')                 // افصل بالـ "|"
       .map(l => l.trim().toLowerCase()) // trim & lowercase
       .filter(Boolean);           // شيل أي فارغ
+
+    console.log('Parsed languages:', acceptLangs);
 
     let filter = {};
 
@@ -157,12 +160,23 @@ export const getAllNews = async (req, res) => {
         acceptLangs.includes(t.language)
       );
 
-      // لو مفيش لغة موجودة في requested langs، خلي fallback لأول ترجمة
+      console.log('News ID:', n._id);
+      console.log('Available translations:', n.translations.map(t => t.language));
+      console.log('Filtered translations:', filteredTranslations.map(t => t.language));
+
+      // لو مفيش لغة موجودة في requested langs، خلي fallback
+      // أول حاول تلاقي en، لو مش موجودة خد أول واحدة
+      let finalTranslations = filteredTranslations;
+      if (filteredTranslations.length === 0) {
+        const enTranslation = n.translations.find(t => t.language === 'en');
+        finalTranslations = enTranslation ? [enTranslation] : [n.translations[0]];
+      }
+
       return {
         _id: n._id,
         image: n.image,
         date: n.date,
-        translations: filteredTranslations.length > 0 ? filteredTranslations : [n.translations[0]]
+        translations: finalTranslations
       };
     });
 
@@ -190,6 +204,7 @@ export const getNewsById = async (req, res) => {
   try {
     console.log('=== GET NEWS BY ID DEBUG ===');
     console.log('Params:', req.params);
+    console.log('Accept-Language header:', req.headers['accept-language']);
 
     const { id } = req.params;
 
@@ -210,9 +225,40 @@ export const getNewsById = async (req, res) => {
       });
     }
 
+    // Accept-Language header ممكن يكون "en", "ar" أو "ar|en"
+    const acceptLangHeader = req.headers['accept-language'] || 'en';
+    const acceptLangs = acceptLangHeader
+      .split('|')
+      .map(l => l.trim().toLowerCase())
+      .filter(Boolean);
+
+    console.log('Parsed languages:', acceptLangs);
+    console.log('Available translations:', news.translations.map(t => t.language));
+
+    // Filter translations based on requested languages
+    const filteredTranslations = news.translations.filter(t =>
+      acceptLangs.includes(t.language)
+    );
+
+    console.log('Filtered translations:', filteredTranslations.map(t => t.language));
+
+    // لو مفيش لغة موجودة في requested langs، خلي fallback
+    let finalTranslations = filteredTranslations;
+    if (filteredTranslations.length === 0) {
+      const enTranslation = news.translations.find(t => t.language === 'en');
+      finalTranslations = enTranslation ? [enTranslation] : [news.translations[0]];
+    }
+
     res.status(200).json({
       message: 'News retrieved successfully',
-      news
+      news: {
+        _id: news._id,
+        image: news.image,
+        date: news.date,
+        translations: finalTranslations,
+        createdAt: news.createdAt,
+        updatedAt: news.updatedAt
+      }
     });
 
   } catch (error) {
