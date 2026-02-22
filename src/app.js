@@ -45,6 +45,7 @@ import calendarRoutes from './modules/calendar/calendar.routes.js';
 import planRoutes from './modules/plans/plan.routes.js';
 import testimonialRoutes from '../src/modules/testimonials/testimonials.routes.js';
 import partnerRoutes from './modules/partners/partner.routes.js';
+import brokerRoutes from './modules/brokers/broker.routes.js';
 import newsRoutes from './modules/news/news.routes.js';
 import contactRoutes from './modules/contacts/contact.routes.js';
 import contactUsRoutes from './modules/contact/contact.routes.js';
@@ -74,6 +75,7 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/v1/partners', partnerRoutes); // Our Partners (new system with translations)
+app.use('/api/partners', brokerRoutes); // Brokers (old partners system)
 app.use('/api/news', newsRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/quick_call', contactUsRoutes);

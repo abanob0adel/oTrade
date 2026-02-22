@@ -19,6 +19,7 @@ const PERMISSIONS_CONFIG = {
   books: ['view', 'create', 'update', 'delete'],
   articles: ['view', 'create', 'update', 'delete'],
   partners: ['view', 'create', 'update', 'delete'],
+  brokers: ['view', 'create', 'update', 'delete'],
   news: ['view', 'create', 'update', 'delete'],
   emails: ['view', 'create', 'update', 'delete']
 };
