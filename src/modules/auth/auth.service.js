@@ -212,11 +212,34 @@ const resetPassword = async (code, newPassword) => {
  */
 const getProfile = async (userId) => {
   const user = await User.findById(userId)
-    .populate('subscription.plan', 'name price duration')
-    .select('-password -resetPasswordToken -resetPasswordExpiry');
+    .populate('subscription.plan') // Populate current subscription plan only
+    .select('-password -resetPasswordCode -resetPasswordExpiry');
   
   if (!user) {
     throw new Error('User not found');
+  }
+  
+  // Filter subscription options to show only enabled ones
+  let subscription = user.subscription;
+  if (subscription?.plan?.subscriptionOptions) {
+    const filteredOptions = {};
+    Object.keys(subscription.plan.subscriptionOptions).forEach(key => {
+      if (subscription.plan.subscriptionOptions[key]?.enabled) {
+        filteredOptions[key] = {
+          price: subscription.plan.subscriptionOptions[key].price,
+          enabled: true
+        };
+      }
+    });
+    
+    // Create a clean plan object with filtered options
+    subscription = {
+      ...subscription.toObject(),
+      plan: {
+        ...subscription.plan.toObject(),
+        subscriptionOptions: filteredOptions
+      }
+    };
   }
   
   return {
@@ -229,7 +252,7 @@ const getProfile = async (userId) => {
       subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus,
       subscriptionExpiry: user.subscriptionExpiry,
-      subscription: user.subscription,
+      subscription: subscription, // Contains plan details with filtered options and duration
       createdAt: user.createdAt
     }
   };
