@@ -19,6 +19,7 @@ const corsOptions = {
     "www.portal.otrade.ae",
     "https://www.otrade.ae",
     "https://www.portal.otrade.ae",
+    "72.61.176.86",
     'https://o-trade-front.vercel.app'
   ],
   credentials: true,
