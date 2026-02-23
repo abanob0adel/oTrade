@@ -15,6 +15,8 @@ const corsOptions = {
     'http://localhost:3000',
     'https://otrade-admin.vercel.app',
     "https://www.otrade.ae",
+    "otrade.ae",
+    "https://www.portal.otrade.ae",
     'https://o-trade-front.vercel.app'
   ],
   credentials: true,
