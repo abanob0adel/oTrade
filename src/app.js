@@ -8,24 +8,9 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Enable CORS with specific origins
+// Enable CORS - Allow all origins temporarily for testing
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://otrade-admin.vercel.app',
-    "https://www.otrade.ae",
-    "www.otrade.ae",
-    "www.portal.otrade.ae",
-    "https://www.otrade.ae",
-    "https://www.portal.otrade.ae",
-    "https://portal.otrade.ae",
-    "http://portal.otrade.ae",
-    'https://o-trade-front.vercel.app',
-    'http://72.61.176.86',
-    'http://72.61.176.86:3000',
-    'http://72.61.176.86:5173'
-  ],
+  origin: true, // Allow all origins
   credentials: true,
   optionsSuccessStatus: 200
 }; 
