@@ -19,6 +19,8 @@ const corsOptions = {
     "www.portal.otrade.ae",
     "https://www.otrade.ae",
     "https://www.portal.otrade.ae",
+    "https://portal.otrade.ae",
+    "http://portal.otrade.ae",
     'https://o-trade-front.vercel.app',
     'http://72.61.176.86',
     'http://72.61.176.86:3000',
