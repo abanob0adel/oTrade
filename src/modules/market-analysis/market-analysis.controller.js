@@ -41,6 +41,7 @@ export const getAnalysesByCategory = async (req, res) => {
 
     // Get paginated analyses
     let query = MarketAnalysis.find({ category: categoryDoc._id, isActive: true })
+      .populate('createdBy', 'name email profileImage')
       .sort({ updatedAt: -1 });
 
     // Apply pagination if middleware is used
@@ -72,6 +73,12 @@ export const getAnalysesByCategory = async (req, res) => {
             coverImage: analysis.coverImage,
             image: analysis.image,
             translations: translationsObject,
+            createdBy: analysis.createdBy ? {
+              id: analysis.createdBy._id,
+              name: analysis.createdBy.name,
+              email: analysis.createdBy.email,
+              profileImage: analysis.createdBy.profileImage
+            } : null,
             updatedAt: analysis.updatedAt
           };
         }
@@ -90,6 +97,12 @@ export const getAnalysesByCategory = async (req, res) => {
           content: translation?.content || '',
           coverImage: analysis.coverImage,
           image: analysis.image,
+          createdBy: analysis.createdBy ? {
+            id: analysis.createdBy._id,
+            name: analysis.createdBy.name,
+            email: analysis.createdBy.email,
+            profileImage: analysis.createdBy.profileImage
+          } : null,
           updatedAt: analysis.updatedAt
         };
       })
@@ -145,16 +158,20 @@ export const getAnalysisBySlug = async (req, res) => {
 
       // Find analysis in specific category (by slug or ID)
       if (mongoose.Types.ObjectId.isValid(slug)) {
-        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, _id: slug, isActive: true });
+        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, _id: slug, isActive: true })
+          .populate('createdBy', 'name email profileImage');
       } else {
-        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, slug, isActive: true });
+        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, slug, isActive: true })
+          .populate('createdBy', 'name email profileImage');
       }
     } else {
       // No category provided (from /single/:slug), search all categories by slug or ID
       if (mongoose.Types.ObjectId.isValid(slug)) {
-        analysis = await MarketAnalysis.findOne({ _id: slug, isActive: true });
+        analysis = await MarketAnalysis.findOne({ _id: slug, isActive: true })
+          .populate('createdBy', 'name email profileImage');
       } else {
-        analysis = await MarketAnalysis.findOne({ slug, isActive: true });
+        analysis = await MarketAnalysis.findOne({ slug, isActive: true })
+          .populate('createdBy', 'name email profileImage');
       }
     }
 
@@ -225,6 +242,12 @@ export const getAnalysisBySlug = async (req, res) => {
           image: analysis.image,
           updates: updatesWithTranslations,
           translations: translationsObject,
+          createdBy: analysis.createdBy ? {
+            id: analysis.createdBy._id,
+            name: analysis.createdBy.name,
+            email: analysis.createdBy.email,
+            profileImage: analysis.createdBy.profileImage
+          } : null,
           updatedAt: analysis.updatedAt,
           createdAt: analysis.createdAt
         }
@@ -248,6 +271,12 @@ export const getAnalysisBySlug = async (req, res) => {
         coverImage: analysis.coverImage,
         image: analysis.image,
         updates: updatesWithTranslations,
+        createdBy: analysis.createdBy ? {
+          id: analysis.createdBy._id,
+          name: analysis.createdBy.name,
+          email: analysis.createdBy.email,
+          profileImage: analysis.createdBy.profileImage
+        } : null,
         updatedAt: analysis.updatedAt,
         createdAt: analysis.createdAt
       }
@@ -385,7 +414,8 @@ export const createAnalysis = async (req, res) => {
       category: categoryDoc._id,
       slug,
       coverImage: coverImageUrl,
-      image: imageUrl
+      image: imageUrl,
+      createdBy: req.auth.id // Add user who created it
     });
 
     // Save translations
