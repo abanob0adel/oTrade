@@ -13,7 +13,7 @@ const marketAnalysisSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-  
+    required: false
   },
   slug: {
     type: String,
