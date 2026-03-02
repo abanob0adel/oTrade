@@ -201,6 +201,7 @@ export const getAnalysisBySlug = async (req, res) => {
 
           return {
             id: update._id,
+            name: update.name || '',
             image: update.image,
             updatedAt: update.updatedAt,
             translations: translationsObject
@@ -214,6 +215,7 @@ export const getAnalysisBySlug = async (req, res) => {
 
         return {
           id: update._id,
+          name: update.name || '',
           title: translation?.title || '',
           content: translation?.content || '',
           image: update.image,
