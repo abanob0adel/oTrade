@@ -41,7 +41,6 @@ export const getAnalysesByCategory = async (req, res) => {
 
     // Get paginated analyses
     let query = MarketAnalysis.find({ category: categoryDoc._id, isActive: true })
-      .populate('createdBy', 'name email profileImage')
       .sort({ updatedAt: -1 });
 
     // Apply pagination if middleware is used
@@ -73,12 +72,6 @@ export const getAnalysesByCategory = async (req, res) => {
             coverImage: analysis.coverImage,
             image: analysis.image,
             translations: translationsObject,
-            createdBy: analysis.createdBy ? {
-              id: analysis.createdBy._id,
-              name: analysis.createdBy.name,
-              email: analysis.createdBy.email,
-              profileImage: analysis.createdBy.profileImage
-            } : null,
             updatedAt: analysis.updatedAt
           };
         }
@@ -97,12 +90,6 @@ export const getAnalysesByCategory = async (req, res) => {
           content: translation?.content || '',
           coverImage: analysis.coverImage,
           image: analysis.image,
-          createdBy: analysis.createdBy ? {
-            id: analysis.createdBy._id,
-            name: analysis.createdBy.name,
-            email: analysis.createdBy.email,
-            profileImage: analysis.createdBy.profileImage
-          } : null,
           updatedAt: analysis.updatedAt
         };
       })
@@ -158,20 +145,16 @@ export const getAnalysisBySlug = async (req, res) => {
 
       // Find analysis in specific category (by slug or ID)
       if (mongoose.Types.ObjectId.isValid(slug)) {
-        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, _id: slug, isActive: true })
-          .populate('createdBy', 'name email profileImage');
+        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, _id: slug, isActive: true });
       } else {
-        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, slug, isActive: true })
-          .populate('createdBy', 'name email profileImage');
+        analysis = await MarketAnalysis.findOne({ category: categoryDoc._id, slug, isActive: true });
       }
     } else {
       // No category provided (from /single/:slug), search all categories by slug or ID
       if (mongoose.Types.ObjectId.isValid(slug)) {
-        analysis = await MarketAnalysis.findOne({ _id: slug, isActive: true })
-          .populate('createdBy', 'name email profileImage');
+        analysis = await MarketAnalysis.findOne({ _id: slug, isActive: true });
       } else {
-        analysis = await MarketAnalysis.findOne({ slug, isActive: true })
-          .populate('createdBy', 'name email profileImage');
+        analysis = await MarketAnalysis.findOne({ slug, isActive: true });
       }
     }
 
@@ -201,7 +184,6 @@ export const getAnalysisBySlug = async (req, res) => {
 
           return {
             id: update._id,
-            name: update.name || '',
             image: update.image,
             updatedAt: update.updatedAt,
             translations: translationsObject
@@ -215,7 +197,6 @@ export const getAnalysisBySlug = async (req, res) => {
 
         return {
           id: update._id,
-          name: update.name || '',
           title: translation?.title || '',
           content: translation?.content || '',
           image: update.image,
@@ -244,12 +225,6 @@ export const getAnalysisBySlug = async (req, res) => {
           image: analysis.image,
           updates: updatesWithTranslations,
           translations: translationsObject,
-          createdBy: analysis.createdBy ? {
-            id: analysis.createdBy._id,
-            name: analysis.createdBy.name,
-            email: analysis.createdBy.email,
-            profileImage: analysis.createdBy.profileImage
-          } : null,
           updatedAt: analysis.updatedAt,
           createdAt: analysis.createdAt
         }
@@ -273,12 +248,6 @@ export const getAnalysisBySlug = async (req, res) => {
         coverImage: analysis.coverImage,
         image: analysis.image,
         updates: updatesWithTranslations,
-        createdBy: analysis.createdBy ? {
-          id: analysis.createdBy._id,
-          name: analysis.createdBy.name,
-          email: analysis.createdBy.email,
-          profileImage: analysis.createdBy.profileImage
-        } : null,
         updatedAt: analysis.updatedAt,
         createdAt: analysis.createdAt
       }
@@ -416,8 +385,7 @@ export const createAnalysis = async (req, res) => {
       category: categoryDoc._id,
       slug,
       coverImage: coverImageUrl,
-      image: imageUrl,
-      createdBy: req.auth.id // Add user who created it
+      image: imageUrl
     });
 
     // Save translations
@@ -693,6 +661,7 @@ export const addAnalysisUpdate = async (req, res) => {
     console.log('ID:', id);
     console.log('Body:', req.body);
     console.log('Files:', req.files);
+    console.log('Files keys:', req.files ? Object.keys(req.files) : 'no files');
     console.log('=====================================\n');
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -842,9 +811,12 @@ export const addAnalysisUpdate = async (req, res) => {
     });
   } catch (error) {
     console.error('Add Analysis Update Error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
     res.status(500).json({
       success: false,
-      error: 'Failed to add update to market analysis'
+      error: 'Failed to add update to market analysis',
+      details: error.message
     });
   }
 };
