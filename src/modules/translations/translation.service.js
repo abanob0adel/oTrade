@@ -18,13 +18,21 @@ export const hasAccess = (userPlans, requiredPlanIds) => {
 /**
  * Create or update translation
  */
-export const createOrUpdateTranslation = async (entityType, entityId, language, title, description, content) => {
+export const createOrUpdateTranslation = async (entityType, entityId, language, title, description, content, name = '') => {
   try {
     if (!['ar', 'en'].includes(language)) throw new Error('Language must be either ar or en');
     const validEntityTypes = ['course','strategy','analysis','webinar','psychology','analyst','testimonial','books','articles','lesson','gold','forex','bitcoin','market-analysis','market-category','market-analysis-update','about-settings','about-team','partner'];
     if (!validEntityTypes.includes(entityType)) throw new Error(`Invalid entityType: ${validEntityTypes.join(', ')}`);
 
-    const translationData = { entityType, entityId, language, title: title || '', description: description || '', content: content || '' };
+    const translationData = { 
+      entityType, 
+      entityId, 
+      language, 
+      title: title || '', 
+      name: name || '',
+      description: description || '', 
+      content: content || '' 
+    };
     let translation = await Translation.findOne({ entityType, entityId, language });
 
     if (translation) {

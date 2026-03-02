@@ -38,6 +38,9 @@ const translationSchema = new mongoose.Schema({
   title: {
     type: String
   },
+  name: {
+    type: String
+  },
   description: {
     type: String
   },

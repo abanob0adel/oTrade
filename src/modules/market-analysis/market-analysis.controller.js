@@ -60,6 +60,7 @@ export const getAnalysesByCategory = async (req, res) => {
           translations.forEach(t => {
             translationsObject[t.language] = {
               title: t.title,
+              name: t.name || '',
               description: t.description,
               content: t.content
             };
@@ -86,6 +87,7 @@ export const getAnalysesByCategory = async (req, res) => {
           categoryId: analysis.category,
           slug: analysis.slug,
           title: translation?.title || '',
+          name: translation?.name || '',
           description: translation?.description || '',
           content: translation?.content || '',
           coverImage: analysis.coverImage,
@@ -178,6 +180,7 @@ export const getAnalysisBySlug = async (req, res) => {
           updateTranslations.forEach(t => {
             translationsObject[t.language] = {
               title: t.title,
+              name: t.name || '',
               content: t.content
             };
           });
@@ -198,6 +201,7 @@ export const getAnalysisBySlug = async (req, res) => {
         return {
           id: update._id,
           title: translation?.title || '',
+          name: translation?.name || '',
           content: translation?.content || '',
           image: update.image,
           updatedAt: update.updatedAt
@@ -210,6 +214,7 @@ export const getAnalysisBySlug = async (req, res) => {
       translations.forEach(t => {
         translationsObject[t.language] = {
           title: t.title,
+          name: t.name || '',
           description: t.description,
           content: t.content
         };
@@ -243,6 +248,7 @@ export const getAnalysisBySlug = async (req, res) => {
         categoryId: analysis.category,
         slug: analysis.slug,
         title: translation?.title || '',
+        name: translation?.name || '',
         description: translation?.description || '',
         content: translation?.content || '',
         coverImage: analysis.coverImage,
@@ -296,6 +302,7 @@ export const createAnalysis = async (req, res) => {
     let title = {};
     let description = {};
     let content = {};
+    let name = {};
 
     // Parse title
     if (typeof req.body.title === 'string') {
@@ -311,6 +318,21 @@ export const createAnalysis = async (req, res) => {
     if (req.body.title_ar) title.ar = req.body.title_ar;
     if (req.body['title[en]']) title.en = req.body['title[en]'];
     if (req.body['title[ar]']) title.ar = req.body['title[ar]'];
+
+    // Parse name
+    if (typeof req.body.name === 'string') {
+      try {
+        name = JSON.parse(req.body.name);
+      } catch (e) {
+        name = { en: req.body.name };
+      }
+    } else if (typeof req.body.name === 'object') {
+      name = req.body.name;
+    }
+    if (req.body.name_en) name.en = req.body.name_en;
+    if (req.body.name_ar) name.ar = req.body.name_ar;
+    if (req.body['name[en]']) name.en = req.body['name[en]'];
+    if (req.body['name[ar]']) name.ar = req.body['name[ar]'];
 
     // Parse description
     if (typeof req.body.description === 'string') {
@@ -404,7 +426,8 @@ export const createAnalysis = async (req, res) => {
         'en',
         title.en || '',
         description.en || '',
-        content.en || ''
+        content.en || '',
+        name.en || ''
       );
     }
 
@@ -415,7 +438,8 @@ export const createAnalysis = async (req, res) => {
         'ar',
         title.ar || '',
         description.ar || '',
-        content.ar || ''
+        content.ar || '',
+        name.ar || ''
       );
     }
 
@@ -425,6 +449,7 @@ export const createAnalysis = async (req, res) => {
     translations.forEach(t => {
       translationsObject[t.language] = {
         title: t.title,
+        name: t.name || '',
         description: t.description,
         content: t.content
       };
@@ -488,6 +513,7 @@ export const updateAnalysis = async (req, res) => {
     let title = {};
     let description = {};
     let content = {};
+    let name = {};
 
     // Parse title
     if (typeof req.body.title === 'string') {
@@ -503,6 +529,21 @@ export const updateAnalysis = async (req, res) => {
     if (req.body.title_ar) title.ar = req.body.title_ar;
     if (req.body['title[en]']) title.en = req.body['title[en]'];
     if (req.body['title[ar]']) title.ar = req.body['title[ar]'];
+
+    // Parse name
+    if (typeof req.body.name === 'string') {
+      try {
+        name = JSON.parse(req.body.name);
+      } catch (e) {
+        name = { en: req.body.name };
+      }
+    } else if (typeof req.body.name === 'object') {
+      name = req.body.name;
+    }
+    if (req.body.name_en) name.en = req.body.name_en;
+    if (req.body.name_ar) name.ar = req.body.name_ar;
+    if (req.body['name[en]']) name.en = req.body['name[en]'];
+    if (req.body['name[ar]']) name.ar = req.body['name[ar]'];
 
     // Parse description
     if (typeof req.body.description === 'string') {
@@ -563,7 +604,8 @@ export const updateAnalysis = async (req, res) => {
         'en',
         title.en || '',
         description.en || '',
-        content.en || ''
+        content.en || '',
+        name.en || ''
       );
     }
 
@@ -574,7 +616,8 @@ export const updateAnalysis = async (req, res) => {
         'ar',
         title.ar || '',
         description.ar || '',
-        content.ar || ''
+        content.ar || '',
+        name.ar || ''
       );
     }
 
@@ -584,6 +627,7 @@ export const updateAnalysis = async (req, res) => {
     translations.forEach(t => {
       translationsObject[t.language] = {
         title: t.title,
+        name: t.name || '',
         description: t.description,
         content: t.content
       };
@@ -690,6 +734,7 @@ export const addAnalysisUpdate = async (req, res) => {
     // Parse translations for title and content
     let title = {};
     let content = {};
+    let name = {};
 
     // Parse title
     if (typeof req.body.title === 'string') {
@@ -705,6 +750,21 @@ export const addAnalysisUpdate = async (req, res) => {
     if (req.body.title_ar) title.ar = req.body.title_ar;
     if (req.body['title[en]']) title.en = req.body['title[en]'];
     if (req.body['title[ar]']) title.ar = req.body['title[ar]'];
+
+    // Parse name
+    if (typeof req.body.name === 'string') {
+      try {
+        name = JSON.parse(req.body.name);
+      } catch (e) {
+        name = { en: req.body.name };
+      }
+    } else if (typeof req.body.name === 'object') {
+      name = req.body.name;
+    }
+    if (req.body.name_en) name.en = req.body.name_en;
+    if (req.body.name_ar) name.ar = req.body.name_ar;
+    if (req.body['name[en]']) name.en = req.body['name[en]'];
+    if (req.body['name[ar]']) name.ar = req.body['name[ar]'];
 
     // Parse content
     if (typeof req.body.content === 'string') {
@@ -780,7 +840,8 @@ export const addAnalysisUpdate = async (req, res) => {
         'en',
         title.en || '',
         '',
-        content.en || ''
+        content.en || '',
+        name.en || ''
       );
     }
 
@@ -791,7 +852,8 @@ export const addAnalysisUpdate = async (req, res) => {
         'ar',
         title.ar || '',
         '',
-        content.ar || ''
+        content.ar || '',
+        name.ar || ''
       );
     }
 
@@ -801,6 +863,7 @@ export const addAnalysisUpdate = async (req, res) => {
     translations.forEach(t => {
       translationsObject[t.language] = {
         title: t.title,
+        name: t.name || '',
         content: t.content
       };
     });
@@ -864,6 +927,7 @@ export const getAnalysisUpdates = async (req, res) => {
           translations.forEach(t => {
             translationsObject[t.language] = {
               title: t.title,
+              name: t.name || '',
               content: t.content
             };
           });
@@ -884,6 +948,7 @@ export const getAnalysisUpdates = async (req, res) => {
         return {
           id: update._id,
           title: translation?.title || '',
+          name: translation?.name || '',
           content: translation?.content || '',
           image: update.image,
           updatedAt: update.updatedAt
@@ -946,6 +1011,7 @@ export const updateAnalysisUpdate = async (req, res) => {
     // Parse translations
     let title = {};
     let content = {};
+    let name = {};
 
     // Parse title
     if (typeof req.body.title === 'string') {
@@ -961,6 +1027,21 @@ export const updateAnalysisUpdate = async (req, res) => {
     if (req.body.title_ar) title.ar = req.body.title_ar;
     if (req.body['title[en]']) title.en = req.body['title[en]'];
     if (req.body['title[ar]']) title.ar = req.body['title[ar]'];
+
+    // Parse name
+    if (typeof req.body.name === 'string') {
+      try {
+        name = JSON.parse(req.body.name);
+      } catch (e) {
+        name = { en: req.body.name };
+      }
+    } else if (typeof req.body.name === 'object') {
+      name = req.body.name;
+    }
+    if (req.body.name_en) name.en = req.body.name_en;
+    if (req.body.name_ar) name.ar = req.body.name_ar;
+    if (req.body['name[en]']) name.en = req.body['name[en]'];
+    if (req.body['name[ar]']) name.ar = req.body['name[ar]'];
 
     // Parse content
     if (typeof req.body.content === 'string') {
@@ -1013,7 +1094,8 @@ export const updateAnalysisUpdate = async (req, res) => {
         'en',
         title.en || '',
         '',
-        content.en || ''
+        content.en || '',
+        name.en || ''
       );
     }
 
@@ -1024,7 +1106,8 @@ export const updateAnalysisUpdate = async (req, res) => {
         'ar',
         title.ar || '',
         '',
-        content.ar || ''
+        content.ar || '',
+        name.ar || ''
       );
     }
 
@@ -1034,6 +1117,7 @@ export const updateAnalysisUpdate = async (req, res) => {
     translations.forEach(t => {
       translationsObject[t.language] = {
         title: t.title,
+        name: t.name || '',
         content: t.content
       };
     });
@@ -1149,6 +1233,7 @@ export const getAnalysisById = async (req, res) => {
           updateTranslations.forEach(t => {
             translationsObject[t.language] = {
               title: t.title,
+              name: t.name || '',
               content: t.content
             };
           });
@@ -1169,6 +1254,7 @@ export const getAnalysisById = async (req, res) => {
         return {
           id: update._id,
           title: translation?.title || '',
+          name: translation?.name || '',
           content: translation?.content || '',
           image: update.image,
           updatedAt: update.updatedAt
@@ -1181,6 +1267,7 @@ export const getAnalysisById = async (req, res) => {
       translations.forEach(t => {
         translationsObject[t.language] = {
           title: t.title,
+          name: t.name || '',
           description: t.description,
           content: t.content
         };
@@ -1214,6 +1301,7 @@ export const getAnalysisById = async (req, res) => {
         categoryId: analysis.category,
         slug: analysis.slug,
         title: translation?.title || '',
+        name: translation?.name || '',
         description: translation?.description || '',
         content: translation?.content || '',
         coverImage: analysis.coverImage,
