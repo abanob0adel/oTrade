@@ -351,19 +351,22 @@ export const createAnalysis = async (req, res) => {
     }
 
     // Upload images
-    if (!req.files?.coverImage || !req.files?.image) {
+    if (!req.files?.coverImage) {
       return res.status(400).json({
         success: false,
-        error: 'Both coverImage and image are required'
+        error: 'coverImage is required'
       });
     }
 
     const coverImageFile = req.files.coverImage[0];
-    const imageFile = req.files.image[0];
+    const imageFile = req.files?.image?.[0];
 
     console.log('Uploading images to BunnyCDN...');
     const coverImageUrl = await bunnycdn.uploadImage(coverImageFile.buffer, coverImageFile.originalname, `market-analysis/${categoryDoc.slug}`);
-    const imageUrl = await bunnycdn.uploadImage(imageFile.buffer, imageFile.originalname, `market-analysis/${categoryDoc.slug}`);
+    let imageUrl = null;
+    if (imageFile) {
+      imageUrl = await bunnycdn.uploadImage(imageFile.buffer, imageFile.originalname, `market-analysis/${categoryDoc.slug}`);
+    }
     console.log('Images uploaded:', { coverImageUrl, imageUrl });
 
     // Generate slug
@@ -381,12 +384,17 @@ export const createAnalysis = async (req, res) => {
     }
 
     // Create analysis
-    const analysis = await MarketAnalysis.create({
+    const analysisData = {
       category: categoryDoc._id,
       slug,
-      coverImage: coverImageUrl,
-      image: imageUrl
-    });
+      coverImage: coverImageUrl
+    };
+    
+    if (imageUrl) {
+      analysisData.image = imageUrl;
+    }
+
+    const analysis = await MarketAnalysis.create(analysisData);
 
     // Save translations
     if (title.en || description.en || content.en) {
