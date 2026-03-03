@@ -39,18 +39,10 @@ const upload = multer({
   }
 });
 
-const uploadImages = upload.fields([
-  { name: 'coverImage', maxCount: 1 },
-  { name: 'image', maxCount: 1 }
-]);
-
-const uploadUpdateImage = upload.fields([
-  { name: 'updateImage', maxCount: 1 }
-]);
-
-const uploadCategoryImage = upload.fields([
-  { name: 'coverImage', maxCount: 1 }
-]);
+// Use .any() to accept any field names (more flexible)
+const uploadImages = upload.any();
+const uploadUpdateImage = upload.any();
+const uploadCategoryImage = upload.any();
 
 /**
  * Market Analysis Routes
