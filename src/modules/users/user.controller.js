@@ -147,10 +147,10 @@ const adminSubscribeUserToPlan = async (req, res) => {
     }
 
     // Validate duration
-    if (!duration || !['monthly', 'yearly'].includes(duration)) {
+    if (!duration || !['monthly', 'quarterly', 'semiAnnual', 'yearly'].includes(duration)) {
       return res.status(400).json({
         success: false,
-        error: 'Duration must be either "monthly" or "yearly"'
+        error: 'Duration must be one of: monthly, quarterly, semiAnnual, yearly'
       });
     }
 
@@ -172,64 +172,80 @@ const adminSubscribeUserToPlan = async (req, res) => {
       });
     }
 
+    // Check if the selected duration is enabled for this plan
+    if (!plan.subscriptionOptions[duration]?.enabled) {
+      return res.status(400).json({
+        success: false,
+        error: `${duration} subscription is not available for this plan`
+      });
+    }
+
+    // Map duration to type for subscription model
+    let subscriptionType;
+    if (duration === 'monthly' || duration === 'quarterly' || duration === 'semiAnnual') {
+      subscriptionType = 'monthly';
+    } else {
+      subscriptionType = 'yearly';
+    }
+
     // Calculate dates
     const startDate = new Date();
-    const endDate = new Date();
-    if (duration === 'monthly') {
-      endDate.setMonth(endDate.getMonth() + 1);
+    let endDate = new Date();
+    
+    switch (duration) {
+      case 'monthly':
+        endDate.setMonth(endDate.getMonth() + 1);
+        break;
+      case 'quarterly':
+        endDate.setMonth(endDate.getMonth() + 3);
+        break;
+      case 'semiAnnual':
+        endDate.setMonth(endDate.getMonth() + 6);
+        break;
+      case 'yearly':
+        endDate.setFullYear(endDate.getFullYear() + 1);
+        break;
+    }
+
+    // Create or update subscription
+    let subscription = await Subscription.findOne({ userId: userId });
+    
+    if (subscription) {
+      subscription.planId = planId;
+      subscription.type = subscriptionType;
+      subscription.status = 'active';
+      subscription.startDate = startDate;
+      subscription.endDate = endDate;
+      await subscription.save();
+      console.log('Subscription updated:', subscription._id);
     } else {
-      endDate.setFullYear(endDate.getFullYear() + 1);
+      subscription = await Subscription.create({
+        userId: userId,
+        planId: planId,
+        type: subscriptionType,
+        status: 'active',
+        startDate,
+        endDate
+      });
+      console.log('Subscription created:', subscription._id);
     }
 
-    // Create subscription
-    const subscription = await Subscription.create({
-      userId: userId,
-      type: duration,
-      startDate,
-      endDate,
-      status: 'active'
-    });
-
-    // Update user's subscribedPlans if not already included
-    if (!user.subscribedPlans.includes(planId)) {
-      user.subscribedPlans.push(planId);
-    }
-
-    // Map plan key to subscriptionPlan enum
-    let subscriptionPlanType = 'free';
+    // Update user subscription status
+    // Only update subscriptionPlan if the plan key matches the enum
+    const validPlans = ['free', 'pro', 'master', 'otrade'];
+    const planKey = plan.key;
     
-    // Use plan.key instead of plan.name (which doesn't exist)
-    const planKey = plan.key ? plan.key.toLowerCase() : '';
-    const planTitleEn = plan.translations?.en?.title ? plan.translations.en.title.toLowerCase() : '';
+    console.log('Plan key:', planKey);
     
-    console.log('Plan key:', plan.key);
-    console.log('Plan title (EN):', plan.translations?.en?.title);
-    
-    // Try to match by key first, then by title
-    const searchText = planKey || planTitleEn;
-    
-    if (searchText.includes('pro')) {
-      subscriptionPlanType = 'pro';
-    } else if (searchText.includes('master')) {
-      subscriptionPlanType = 'master';
-    } else if (searchText.includes('otrade')) {
-      subscriptionPlanType = 'otrade';
+    // Only update if it's a valid enum value
+    if (validPlans.includes(planKey)) {
+      user.subscriptionPlan = planKey;
     }
     
-    console.log('Mapped subscriptionPlan:', subscriptionPlanType);
-
-    // Update user subscription info
-    user.subscription = {
-      plan: planId,
-      duration,
-      startDate,
-      endDate
-    };
-    user.subscriptionPlan = subscriptionPlanType;
     user.subscriptionStatus = 'active';
-    user.subscriptionExpiry = endDate;
-
-    await user.save();
+    await user.save({ validateModifiedOnly: true });
+    
+    console.log('User updated successfully');
 
     res.status(201).json({
       success: true,
@@ -238,26 +254,24 @@ const adminSubscribeUserToPlan = async (req, res) => {
         subscription: {
           id: subscription._id,
           userId: subscription.userId,
+          planId: subscription.planId,
           type: subscription.type,
           startDate: subscription.startDate,
           endDate: subscription.endDate,
-          status: subscription.status
+          status: subscription.status,
+          duration: duration
         },
         plan: {
           id: plan._id,
           key: plan.key,
-          title: {
-            en: plan.translations?.en?.title,
-            ar: plan.translations?.ar?.title
-          }
+          translations: plan.translations,
+          price: plan.subscriptionOptions[duration]?.price
         },
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
-          subscriptionPlan: user.subscriptionPlan,
-          subscriptionStatus: user.subscriptionStatus,
-          subscriptionExpiry: user.subscriptionExpiry
+          subscriptionStatus: user.subscriptionStatus
         }
       }
     });
