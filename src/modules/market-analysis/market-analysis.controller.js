@@ -373,15 +373,15 @@ export const createAnalysis = async (req, res) => {
     }
 
     // Upload images
-    if (!req.files?.coverImage) {
+    const coverImageFile = req.files?.find(f => f.fieldname === 'coverImage');
+    const imageFile = req.files?.find(f => f.fieldname === 'image');
+    
+    if (!coverImageFile) {
       return res.status(400).json({
         success: false,
         error: 'coverImage is required'
       });
     }
-
-    const coverImageFile = req.files.coverImage[0];
-    const imageFile = req.files?.image?.[0];
 
     console.log('Uploading images to BunnyCDN...');
     const coverImageUrl = await bunnycdn.uploadImage(coverImageFile.buffer, coverImageFile.originalname, `market-analysis/${categoryDoc.slug}`);
@@ -580,14 +580,15 @@ export const updateAnalysis = async (req, res) => {
     const categorySlug = categoryDoc?.slug || 'uncategorized';
 
     // Upload new images if provided
-    if (req.files?.coverImage) {
-      const coverImageFile = req.files.coverImage[0];
+    const coverImageFile = req.files?.find(f => f.fieldname === 'coverImage');
+    const imageFile = req.files?.find(f => f.fieldname === 'image');
+    
+    if (coverImageFile) {
       console.log('Uploading new cover image...');
       analysis.coverImage = await bunnycdn.uploadImage(coverImageFile.buffer, coverImageFile.originalname, `market-analysis/${categorySlug}`);
     }
 
-    if (req.files?.image) {
-      const imageFile = req.files.image[0];
+    if (imageFile) {
       console.log('Uploading new image...');
       analysis.image = await bunnycdn.uploadImage(imageFile.buffer, imageFile.originalname, `market-analysis/${categorySlug}`);
     }
@@ -790,7 +791,9 @@ export const addAnalysisUpdate = async (req, res) => {
     }
 
     // Validate update image
-    if (!req.files?.updateImage) {
+    const updateImageFile = req.files?.find(f => f.fieldname === 'updateImage');
+    
+    if (!updateImageFile) {
       return res.status(400).json({
         success: false,
         error: 'Update image is required'
@@ -802,7 +805,6 @@ export const addAnalysisUpdate = async (req, res) => {
     const categorySlug = categoryDoc?.slug || 'uncategorized';
 
     // Upload update image
-    const updateImageFile = req.files.updateImage[0];
     console.log('Uploading update image...');
     const updateImageUrl = await bunnycdn.uploadImage(
       updateImageFile.buffer, 
@@ -1059,11 +1061,12 @@ export const updateAnalysisUpdate = async (req, res) => {
     if (req.body['content[ar]']) content.ar = req.body['content[ar]'];
 
     // Upload new image if provided
-    if (req.files?.updateImage) {
+    const updateImageFile = req.files?.find(f => f.fieldname === 'updateImage');
+    
+    if (updateImageFile) {
       const categoryDoc = await Category.findById(analysis.category);
       const categorySlug = categoryDoc?.slug || 'uncategorized';
       
-      const updateImageFile = req.files.updateImage[0];
       console.log('Uploading new update image...');
       analysis.updates[updateIndex].image = await bunnycdn.uploadImage(
         updateImageFile.buffer,

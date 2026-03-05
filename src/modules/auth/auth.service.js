@@ -212,33 +212,45 @@ const resetPassword = async (code, newPassword) => {
  */
 const getProfile = async (userId) => {
   const user = await User.findById(userId)
-    .populate('subscription.plan') // Populate current subscription plan only
     .select('-password -resetPasswordCode -resetPasswordExpiry');
   
   if (!user) {
     throw new Error('User not found');
   }
   
-  // Filter subscription options to show only enabled ones
-  let subscription = user.subscription;
-  if (subscription?.plan?.subscriptionOptions) {
+  // Get active subscription from Subscription collection
+  const Subscription = (await import('../subscriptions/subscription.model.js')).default;
+  const subscription = await Subscription.findOne({ 
+    userId: user._id, 
+    status: 'active' 
+  }).populate('planId');
+  
+  let subscriptionData = null;
+  if (subscription && subscription.planId) {
+    // Filter subscription options to show only enabled ones
     const filteredOptions = {};
-    Object.keys(subscription.plan.subscriptionOptions).forEach(key => {
-      if (subscription.plan.subscriptionOptions[key]?.enabled) {
-        filteredOptions[key] = {
-          price: subscription.plan.subscriptionOptions[key].price,
-          enabled: true
-        };
-      }
-    });
+    if (subscription.planId.subscriptionOptions) {
+      Object.keys(subscription.planId.subscriptionOptions).forEach(key => {
+        if (subscription.planId.subscriptionOptions[key]?.enabled) {
+          filteredOptions[key] = {
+            price: subscription.planId.subscriptionOptions[key].price,
+            enabled: true
+          };
+        }
+      });
+    }
     
-    // Create a clean plan object with filtered options
-    subscription = {
-      ...subscription.toObject(),
+    subscriptionData = {
       plan: {
-        ...subscription.plan.toObject(),
+        id: subscription.planId._id,
+        key: subscription.planId.key,
+        translations: subscription.planId.translations,
         subscriptionOptions: filteredOptions
-      }
+      },
+      type: subscription.type,
+      startDate: subscription.startDate,
+      endDate: subscription.endDate,
+      status: subscription.status
     };
   }
   
@@ -251,8 +263,7 @@ const getProfile = async (userId) => {
       role: user.role,
       subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus,
-      subscriptionExpiry: user.subscriptionExpiry,
-      subscription: subscription, // Contains plan details with filtered options and duration
+      subscription: subscriptionData,
       createdAt: user.createdAt
     }
   };

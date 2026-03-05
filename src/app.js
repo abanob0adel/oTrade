@@ -14,7 +14,7 @@ const corsOptions = {
     'http://localhost:5173',
     'http://localhost:3000',
     'https://otrade-admin.vercel.app',
-    'https://otrade.ae',
+    'https://otrade.ae', 
     'https://www.otrade.ae',
     'http://otrade.ae',
     'http://www.otrade.ae',
@@ -40,6 +40,7 @@ app.use(express.urlencoded({ extended: true })); // Support FormData
 // Routes
 import authRoutes from './modules/auth/auth.routes.js';
 import subscriptionRoutes from './modules/subscriptions/subscription.routes.js';
+import subscriptionRequestRoutes from './modules/subscription-requests/subscription-request.routes.js';
 import courseRoutes from './modules/courses/courses.routes.js';
 import strategyRoutes from './modules/strategies/strategies.routes.js';
 import analysisRoutes from './modules/analysis/analysis.routes.js';
@@ -70,6 +71,7 @@ import aboutRoutes from './modules/about/about.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/subscriptions', subscriptionRoutes);
+app.use('/api/subscription-requests', subscriptionRequestRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/strategies', strategyRoutes);
 app.use('/api/analysis', analysisRoutes);

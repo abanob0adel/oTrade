@@ -120,7 +120,9 @@ export const createCategory = async (req, res) => {
     }
 
     // Validate coverImage
-    if (!req.files?.coverImage) {
+    const coverImageFile = req.files?.find(f => f.fieldname === 'coverImage');
+    
+    if (!coverImageFile) {
       return res.status(400).json({
         success: false,
         error: 'Cover image is required'
@@ -142,7 +144,6 @@ export const createCategory = async (req, res) => {
     }
 
     // Upload cover image
-    const coverImageFile = req.files.coverImage[0];
     console.log('Uploading cover image to BunnyCDN...');
     const coverImageUrl = await bunnycdn.uploadImage(coverImageFile.buffer, coverImageFile.originalname, 'market-categories');
     console.log('Cover image uploaded:', coverImageUrl);
@@ -238,8 +239,9 @@ export const updateCategory = async (req, res) => {
     if (req.body.isActive !== undefined) category.isActive = req.body.isActive;
 
     // Upload new cover image if provided
-    if (req.files?.coverImage) {
-      const coverImageFile = req.files.coverImage[0];
+    const coverImageFile = req.files?.find(f => f.fieldname === 'coverImage');
+    
+    if (coverImageFile) {
       console.log('Uploading new cover image...');
       category.coverImage = await bunnycdn.uploadImage(coverImageFile.buffer, coverImageFile.originalname, 'market-categories');
       console.log('Cover image uploaded:', category.coverImage);
