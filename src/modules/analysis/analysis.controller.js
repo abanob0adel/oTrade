@@ -469,31 +469,109 @@ const getAnalysisById = async (req, res) => {
     
     // Get translations for the analysis
     const translations = await getTranslationsByEntity('analysis', analysis._id);
+    const requestedLang = req.get('Accept-Language') || 'en';
+    const translation = translations.find(t => t.language === requestedLang) ||
+                       translations.find(t => t.language === 'en') ||
+                       translations[0];
     
-    // Determine if user is admin (from JWT via middleware)
-    const isAdmin = req.userType === 'admin' && req.role === 'admin';
-    const isSuperAdmin = req.userType === 'admin' && req.role === 'super_admin';
-    const isAdminUser = isAdmin || isSuperAdmin;
+    // Determine if user is admin
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'super_admin');
     
-    // Get user plans from user object if it exists (regular user)
-    const userPlans = req.user && req.user.subscriptionPlan ? [req.user.subscriptionPlan] : ['free'];
+    // ===== FREE =====
+    if (!analysis.plans || analysis.plans.length === 0) {
+      return res.status(200).json({
+        analysis: {
+          id: analysis._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          content: translation?.content || '',
+          coverImageUrl: analysis.coverImageUrl,
+          contentUrl: analysis.contentUrl,
+          market: analysis.market,
+          type: analysis.type,
+          locked: false
+        }
+      });
+    }
     
-    // Use formatContentResponse with access control
-    const content = formatContentResponse(
-      analysis,
-      translations,
-      req.lang || 'en',
-      userPlans,
-      isAdminUser
-    );
+    // ===== PAID =====
+    if (!req.user) {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'This analysis requires an active subscription plan. Please login and subscribe to access.',
+        analysis: {
+          id: analysis._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          coverImageUrl: analysis.coverImageUrl,
+          market: analysis.market,
+          type: analysis.type,
+          locked: true
+        }
+      });
+    }
     
-    // Add analysis-specific fields
-    content.market = analysis.market;
-    content.type = analysis.type;
-    if (isAdminUser && analysis.plans) content.plans = analysis.plans;
+    if (isAdmin) {
+      return res.status(200).json({
+        analysis: {
+          id: analysis._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          content: translation?.content || '',
+          coverImageUrl: analysis.coverImageUrl,
+          contentUrl: analysis.contentUrl,
+          market: analysis.market,
+          type: analysis.type,
+          plans: analysis.plans,
+          locked: false
+        }
+      });
+    }
     
-    res.status(200).json({
-      analysis: content
+    // Check user's active subscription
+    const Subscription = (await import('../subscriptions/subscription.model.js')).default;
+    const userSubscription = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active'
+    });
+    
+    let hasAccess = false;
+    if (userSubscription && userSubscription.planId) {
+      hasAccess = analysis.plans.some(planId =>
+        planId.toString() === userSubscription.planId.toString()
+      );
+    }
+    
+    if (hasAccess) {
+      return res.status(200).json({
+        analysis: {
+          id: analysis._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          content: translation?.content || '',
+          coverImageUrl: analysis.coverImageUrl,
+          contentUrl: analysis.contentUrl,
+          market: analysis.market,
+          type: analysis.type,
+          locked: false
+        }
+      });
+    }
+    
+    // User is authenticated but doesn't have access
+    return res.status(403).json({
+      error: 'Access denied',
+      message: 'You need to subscribe to a plan that includes this analysis',
+      analysis: {
+        id: analysis._id,
+        title: translation?.title || '',
+        description: translation?.description || '',
+        coverImageUrl: analysis.coverImageUrl,
+        market: analysis.market,
+        type: analysis.type,
+        locked: true
+      },
+      requiredPlans: analysis.plans
     });
   } catch (error) {
     console.error('Error fetching analysis:', error);

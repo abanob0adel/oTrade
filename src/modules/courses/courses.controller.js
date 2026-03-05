@@ -427,8 +427,17 @@ const getCourseById = async (req, res) => {
 
     // ❌ Paid course requires authentication
     if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentication required to access paid courses'
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'This course requires an active subscription plan. Please login and subscribe to access.',
+        course: {
+          id: course._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          coverImageUrl: course.coverImageUrl || '',
+          isPaid: true,
+          locked: true
+        }
       });
     }
 
@@ -450,18 +459,23 @@ const getCourseById = async (req, res) => {
       });
     }
 
-    // ===== Subscription check =====
-    const userActivePlans = req.user.activePlans || [];
-    const coursePlans = course.plans || [];
+    // ===== Check user's active subscription from Subscription collection =====
+    const Subscription = (await import('../subscriptions/subscription.model.js')).default;
+    const userSubscription = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active'
+    });
 
-    const hasAccess = coursePlans.some(planId =>
-      userActivePlans.some(userPlanId =>
-        userPlanId.toString() === planId.toString()
-      )
-    );
+    let hasAccess = false;
+    if (userSubscription && userSubscription.planId) {
+      // Check if the course's plans include the user's subscribed plan
+      hasAccess = course.plans.some(planId =>
+        planId.toString() === userSubscription.planId.toString()
+      );
+    }
 
-    console.log('User active plans:', userActivePlans);
-    console.log('Course plans:', coursePlans);
+    console.log('User subscription:', userSubscription);
+    console.log('Course plans:', course.plans);
     console.log('Has access:', hasAccess);
 
     // ======================================================
@@ -485,14 +499,18 @@ const getCourseById = async (req, res) => {
     // ======================================================
     // 🔒 Locked Course (Not Subscribed)
     // ======================================================
-    return res.status(200).json({
+    return res.status(403).json({
+      error: 'Access denied',
+      message: 'You need to subscribe to a plan that includes this course',
       course: {
         id: course._id,
         title: translation?.title || '',
         description: translation?.description || '',
+        coverImageUrl: course.coverImageUrl || '',
         isPaid: true,
         locked: true
-      }
+      },
+      requiredPlans: course.plans
     });
 
   } catch (error) {

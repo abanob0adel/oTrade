@@ -8,9 +8,9 @@ import { createPsychology, updatePsychology, deletePsychology, getAllPsychology,
 
 const router = express.Router();
 
-// Public routes with language detection
-router.get('/', detectLanguage, getAllPsychology);
-router.get('/:id', detectLanguage, getPsychologyById);
+// Public routes with optional authentication for subscription check
+router.get('/', optionalAuthenticate, detectLanguage, getAllPsychology);
+router.get('/:id', optionalAuthenticate, detectLanguage, getPsychologyById);
 
 // Authenticated routes with subscription plan requirements
 router.get('/advanced/:id', authenticate, requirePlan('master'), detectLanguage, getPsychologyById);

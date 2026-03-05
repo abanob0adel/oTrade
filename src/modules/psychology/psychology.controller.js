@@ -406,7 +406,7 @@ const getPsychologyById = async (req, res) => {
     const requestedLang = req.get('Accept-Language') || 'en';
     console.log('[DEBUG] requestedLang:', requestedLang);
 
-    // 🔹 البحث بدون أي شروط إضافية
+    // Find psychology
     const psychology = await Psychology.findOne({ _id: id });
     console.log('[DEBUG] psychology found:', psychology);
 
@@ -423,41 +423,116 @@ const getPsychologyById = async (req, res) => {
     );
     console.log('[DEBUG] translations:', translations);
 
+    const translation =
+      translations.find(t => t.language === requestedLang) ||
+      translations.find(t => t.language === 'en') ||
+      translations[0];
+
     const isAdmin =
-      req.userType === 'admin' &&
-      (req.role === 'admin' || req.role === 'super_admin');
+      req.user &&
+      (req.user.role === 'admin' || req.user.role === 'super_admin');
     console.log('[DEBUG] isAdmin:', isAdmin);
 
-    const userPlans =
-      req.user?.subscribedPlans?.map(p => p.toString()) || [];
-    console.log('[DEBUG] userPlans:', userPlans);
-
-    const content = await formatPsychologyContentResponse(
-      psychology,
-      translations,
-      requestedLang,
-      userPlans,
-      isAdmin
-    );
-    console.log('[DEBUG] formatted content:', content);
-
-    // 📎 Attach assets safely
-    if (psychology.coverImageUrl) content.coverImageUrl = psychology.coverImageUrl;
-    if (psychology.contentUrl) content.contentUrl = psychology.contentUrl;
-    if (psychology.fileUrl) content.fileUrl = psychology.fileUrl;
-    if (psychology.videoUrl) content.videoUrl = psychology.videoUrl;
-    if (psychology.key) content.key = psychology.key;
-
-    // 👑 Admin-only fields
-    if (isAdmin && psychology.plans) {
-      content.plans = psychology.plans;
+    // ===== FREE =====
+    if (!psychology.isPaid) {
+      return res.status(200).json({
+        psychology: {
+          id: psychology._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          content: translation?.content || '',
+          coverImageUrl: psychology.coverImageUrl,
+          contentUrl: psychology.contentUrl,
+          fileUrl: psychology.fileUrl,
+          videoUrl: psychology.videoUrl,
+          key: psychology.key,
+          locked: false
+        }
+      });
     }
 
-    console.log('[DEBUG] final response content:', content);
+    // ===== PAID =====
+    if (!req.user) {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'This psychology content requires an active subscription plan. Please login and subscribe to access.',
+        psychology: {
+          id: psychology._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          coverImageUrl: psychology.coverImageUrl,
+          key: psychology.key,
+          locked: true
+        }
+      });
+    }
 
-    return res.status(200).json({
-      psychology: content
+    if (isAdmin) {
+      return res.status(200).json({
+        psychology: {
+          id: psychology._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          content: translation?.content || '',
+          coverImageUrl: psychology.coverImageUrl,
+          contentUrl: psychology.contentUrl,
+          fileUrl: psychology.fileUrl,
+          videoUrl: psychology.videoUrl,
+          key: psychology.key,
+          locked: false
+        }
+      });
+    }
+
+    // Check user's active subscription
+    const Subscription = (await import('../subscriptions/subscription.model.js')).default;
+    const userSubscription = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active'
     });
+
+    let hasAccess = false;
+    if (userSubscription && userSubscription.planId) {
+      hasAccess = psychology.plans.some(planId =>
+        planId.toString() === userSubscription.planId.toString()
+      );
+    }
+
+    console.log('[DEBUG] userSubscription:', userSubscription);
+    console.log('[DEBUG] hasAccess:', hasAccess);
+
+    if (hasAccess) {
+      return res.status(200).json({
+        psychology: {
+          id: psychology._id,
+          title: translation?.title || '',
+          description: translation?.description || '',
+          content: translation?.content || '',
+          coverImageUrl: psychology.coverImageUrl,
+          contentUrl: psychology.contentUrl,
+          fileUrl: psychology.fileUrl,
+          videoUrl: psychology.videoUrl,
+          key: psychology.key,
+          locked: false
+        }
+      });
+    }
+
+    // User is authenticated but doesn't have access
+    return res.status(403).json({
+      error: 'Access denied',
+      message: 'You need to subscribe to a plan that includes this psychology content',
+      psychology: {
+        id: psychology._id,
+        title: translation?.title || '',
+        description: translation?.description || '',
+        coverImageUrl: psychology.coverImageUrl,
+        key: psychology.key,
+        locked: true
+      },
+      requiredPlans: psychology.plans
+    });
+
   } catch (error) {
     console.error('[ERROR] Error fetching psychology:', error);
     return res.status(500).json({

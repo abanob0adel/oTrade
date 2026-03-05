@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticate, checkPermission } from '../../middlewares/rbac.middleware.js';
+import optionalAuthenticate from '../../middlewares/rbac.middleware.js';
 import { pagination } from '../../middlewares/pagination.middleware.js';
 import {
   createStrategy,
@@ -15,12 +16,12 @@ import { uploadWithOptionalImage } from '../../middlewares/upload.middleware.js'
 const router = express.Router();
 
 /**
- * Public routes
+ * Public routes (with optional authentication to check subscription)
  */
-router.get('/', pagination(), getAllStrategies);
-router.get('/free', pagination(), getFreeStrategies);
-router.get('/paid', pagination(), getPaidStrategies);
-router.get('/:id', getStrategyById);
+router.get('/', optionalAuthenticate, pagination(), getAllStrategies);
+router.get('/free', optionalAuthenticate, pagination(), getFreeStrategies);
+router.get('/paid', optionalAuthenticate, pagination(), getPaidStrategies);
+router.get('/:id', optionalAuthenticate, getStrategyById);
 
 /**
  * Admin routes
