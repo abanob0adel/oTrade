@@ -86,8 +86,7 @@ const login = async (email, password) => {
   }
   
   // Find user by email
-  const user = await User.findOne({ email: email.toLowerCase() })
-    .populate('subscription.plan', 'name price duration');
+  const user = await User.findOne({ email: email.toLowerCase() });
   
   if (!user) {
     throw new Error('Invalid email or password');
@@ -97,6 +96,42 @@ const login = async (email, password) => {
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     throw new Error('Invalid email or password');
+  }
+  
+  // Get active subscription from Subscription collection
+  const Subscription = (await import('../subscriptions/subscription.model.js')).default;
+  const subscription = await Subscription.findOne({ 
+    userId: user._id, 
+    status: 'active' 
+  }).populate('planId');
+  
+  let subscriptionData = {};
+  if (subscription && subscription.planId) {
+    // Filter subscription options to show only enabled ones
+    const filteredOptions = {};
+    if (subscription.planId.subscriptionOptions) {
+      Object.keys(subscription.planId.subscriptionOptions).forEach(key => {
+        if (subscription.planId.subscriptionOptions[key]?.enabled) {
+          filteredOptions[key] = {
+            price: subscription.planId.subscriptionOptions[key].price,
+            enabled: true
+          };
+        }
+      });
+    }
+    
+    subscriptionData = {
+      plan: {
+        id: subscription.planId._id,
+        key: subscription.planId.key,
+        translations: subscription.planId.translations,
+        subscriptionOptions: filteredOptions
+      },
+      type: subscription.type,
+      startDate: subscription.startDate,
+      endDate: subscription.endDate,
+      status: subscription.status
+    };
   }
   
   // Generate JWT token
@@ -118,10 +153,8 @@ const login = async (email, password) => {
       email: user.email,
       profileImage: user.profileImage,
       role: user.role,
-      subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus,
-      subscriptionExpiry: user.subscriptionExpiry,
-      subscription: user.subscription
+      subscription: subscriptionData
     }
   };
 };
@@ -225,6 +258,12 @@ const getProfile = async (userId) => {
     status: 'active' 
   }).populate('planId');
   
+  console.log('User subscription lookup:', {
+    userId: user._id,
+    subscriptionFound: !!subscription,
+    planIdPopulated: subscription?.planId ? true : false
+  });
+  
   let subscriptionData = null;
   if (subscription && subscription.planId) {
     // Filter subscription options to show only enabled ones
@@ -261,7 +300,6 @@ const getProfile = async (userId) => {
       email: user.email,
       profileImage: user.profileImage,
       role: user.role,
-      subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus,
       subscription: subscriptionData,
       createdAt: user.createdAt

@@ -143,33 +143,35 @@ export const getAllSubscriptionRequests = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const formattedRequests = requests.map(request => ({
-      id: request._id,
-      user: {
-        id: request.user._id,
-        name: request.user.name,
-        email: request.user.email,
-        phone: request.user.phone,
-        profileImage: request.user.profileImage
-      },
-      plan: {
-        id: request.plan._id,
-        key: request.plan.key,
-        translations: request.plan.translations
-      },
-      duration: request.duration,
-      price: request.price,
-      status: request.status,
-      reviewedBy: request.reviewedBy ? {
-        id: request.reviewedBy._id,
-        name: request.reviewedBy.name,
-        email: request.reviewedBy.email
-      } : null,
-      reviewedAt: request.reviewedAt,
-      rejectionReason: request.rejectionReason,
-      createdAt: request.createdAt,
-      updatedAt: request.updatedAt
-    }));
+    const formattedRequests = requests
+      .filter(request => request.user && request.plan) // Filter out requests with null user or plan
+      .map(request => ({
+        id: request._id,
+        user: {
+          id: request.user._id,
+          name: request.user.name,
+          email: request.user.email,
+          phone: request.user.phone,
+          profileImage: request.user.profileImage
+        },
+        plan: {
+          id: request.plan._id,
+          key: request.plan.key,
+          translations: request.plan.translations
+        },
+        duration: request.duration,
+        price: request.price,
+        status: request.status,
+        reviewedBy: request.reviewedBy ? {
+          id: request.reviewedBy._id,
+          name: request.reviewedBy.name,
+          email: request.reviewedBy.email
+        } : null,
+        reviewedAt: request.reviewedAt,
+        rejectionReason: request.rejectionReason,
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt
+      }));
 
     // Send response with pagination
     if (req.paginatedResponse) {
@@ -323,6 +325,14 @@ export const approveSubscriptionRequest = async (req, res) => {
     // Create or update subscription
     let subscription = await Subscription.findOne({ userId: request.user._id });
     
+    console.log('Creating/Updating subscription:', {
+      userId: request.user._id,
+      planId: request.plan._id,
+      duration: duration,
+      subscriptionType: subscriptionType,
+      existingSubscription: !!subscription
+    });
+    
     if (subscription) {
       subscription.planId = request.plan._id;
       subscription.type = subscriptionType;
@@ -330,6 +340,7 @@ export const approveSubscriptionRequest = async (req, res) => {
       subscription.startDate = startDate;
       subscription.endDate = endDate;
       await subscription.save();
+      console.log('Subscription updated:', subscription._id);
     } else {
       subscription = await Subscription.create({
         userId: request.user._id,
@@ -339,26 +350,32 @@ export const approveSubscriptionRequest = async (req, res) => {
         startDate,
         endDate
       });
+      console.log('Subscription created:', subscription._id);
     }
 
     // Update user subscription status
-    // Map plan key to valid subscriptionPlan enum
-    const planKeyMapping = {
-      'free': 'free',
-      'pro': 'pro',
-      'master': 'master',
-      'otrade': 'otrade',
-      'advanced_trading_strategy': 'master',
-      'professional_trader': 'pro',
-      'basic': 'free'
-    };
-    
+    // Only update subscriptionPlan if the plan key matches the enum
+    const validPlans = ['free', 'pro', 'master', 'otrade'];
     const planKey = request.plan.key;
-    const mappedPlan = planKeyMapping[planKey] || 'free';
     
-    request.user.subscriptionPlan = mappedPlan;
+    console.log('Updating user:', {
+      userId: request.user._id,
+      planKey: planKey,
+      isValidPlan: validPlans.includes(planKey),
+      currentSubscriptionPlan: request.user.subscriptionPlan
+    });
+    
+    // Only update if it's a valid enum value
+    if (validPlans.includes(planKey)) {
+      request.user.subscriptionPlan = planKey;
+    }
+    // If not valid, keep the current value or set to a default based on plan features
+    // You can add custom logic here if needed
+    
     request.user.subscriptionStatus = 'active';
     await request.user.save({ validateModifiedOnly: true });
+    
+    console.log('User updated successfully');
 
     // Update request status
     request.status = 'approved';
@@ -462,24 +479,26 @@ export const getMySubscriptionRequests = async (req, res) => {
       .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 });
 
-    const formattedRequests = requests.map(request => ({
-      id: request._id,
-      plan: {
-        id: request.plan._id,
-        key: request.plan.key,
-        translations: request.plan.translations
-      },
-      duration: request.duration,
-      price: request.price,
-      status: request.status,
-      reviewedBy: request.reviewedBy ? {
-        name: request.reviewedBy.name,
-        email: request.reviewedBy.email
-      } : null,
-      reviewedAt: request.reviewedAt,
-      rejectionReason: request.rejectionReason,
-      createdAt: request.createdAt
-    }));
+    const formattedRequests = requests
+      .filter(request => request.plan) // Filter out requests with null plan
+      .map(request => ({
+        id: request._id,
+        plan: {
+          id: request.plan._id,
+          key: request.plan.key,
+          translations: request.plan.translations
+        },
+        duration: request.duration,
+        price: request.price,
+        status: request.status,
+        reviewedBy: request.reviewedBy ? {
+          name: request.reviewedBy.name,
+          email: request.reviewedBy.email
+        } : null,
+        reviewedAt: request.reviewedAt,
+        rejectionReason: request.rejectionReason,
+        createdAt: request.createdAt
+      }));
 
     res.status(200).json({
       success: true,

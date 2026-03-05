@@ -280,9 +280,20 @@ const getStrategyById = async (req, res) => {
       });
     }
 
-    const hasAccess = strategy.plans.some(planId =>
-      req.user.activePlans?.some(p => p.toString() === planId.toString())
-    );
+    // Check user's active subscription
+    const Subscription = (await import('../subscriptions/subscription.model.js')).default;
+    const userSubscription = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active'
+    });
+
+    let hasAccess = false;
+    if (userSubscription && userSubscription.planId) {
+      // Check if the strategy's plans include the user's subscribed plan
+      hasAccess = strategy.plans.some(planId =>
+        planId.toString() === userSubscription.planId.toString()
+      );
+    }
 
     if (hasAccess) {
       return res.status(200).json({
