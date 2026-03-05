@@ -32,32 +32,46 @@ const getProfile = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    // Get all users with populated plans
+    // Get all users
     const users = await User.find()
-      .select('-password -resetPasswordToken -resetPasswordExpiry')
-      .populate('subscribedPlans', 'name price duration')
-      .populate('subscription.plan', 'name price duration')
+      .select('-password -resetPasswordToken -resetPasswordExpiry -resetPasswordCode -resetPasswordExpiry')
       .sort({ createdAt: -1 });
     
     // Get newsletter subscriptions
     const newsletterEmails = await Newsletter.find().select('email');
     const newsletterEmailSet = new Set(newsletterEmails.map(n => n.email));
     
-    // Get active subscriptions
+    // Get all active subscriptions with populated plan
     const activeSubscriptions = await Subscription.find({ status: 'active' })
-      .select('userId type startDate endDate');
+      .populate('planId')
+      .select('userId planId type startDate endDate status');
     
     // Create a map of user subscriptions
     const userSubscriptionsMap = {};
     activeSubscriptions.forEach(sub => {
-      if (!userSubscriptionsMap[sub.userId.toString()]) {
-        userSubscriptionsMap[sub.userId.toString()] = [];
+      const userId = sub.userId.toString();
+      if (!userSubscriptionsMap[userId]) {
+        userSubscriptionsMap[userId] = [];
       }
-      userSubscriptionsMap[sub.userId.toString()].push({
+      
+      const subscriptionData = {
+        id: sub._id,
         type: sub.type,
         startDate: sub.startDate,
-        endDate: sub.endDate
-      });
+        endDate: sub.endDate,
+        status: sub.status
+      };
+      
+      // Add plan details if populated
+      if (sub.planId) {
+        subscriptionData.plan = {
+          id: sub.planId._id,
+          key: sub.planId.key,
+          translations: sub.planId.translations
+        };
+      }
+      
+      userSubscriptionsMap[userId].push(subscriptionData);
     });
     
     // Format users with additional info
@@ -65,12 +79,10 @@ const getAllUsers = async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       profileImage: user.profileImage,
       role: user.role,
-      subscriptionPlan: user.subscriptionPlan,
       subscriptionStatus: user.subscriptionStatus,
-      subscriptionExpiry: user.subscriptionExpiry,
-      subscribedPlans: user.subscribedPlans || [],
       activeSubscriptions: userSubscriptionsMap[user._id.toString()] || [],
       isNewsletterSubscribed: newsletterEmailSet.has(user.email),
       createdAt: user.createdAt,
@@ -97,21 +109,70 @@ const getUserById = async (req, res) => {
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ error: 'Invalid user ID.' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid user ID.' 
+      });
     }
     
-    const user = await User.findById(id).select('-password');
+    const user = await User.findById(id)
+      .select('-password -resetPasswordToken -resetPasswordExpiry -resetPasswordCode');
     
     if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'User not found.' 
+      });
     }
     
+    // Get user's active subscription with plan details
+    const subscription = await Subscription.findOne({
+      userId: id,
+      status: 'active'
+    }).populate('planId');
+    
+    let subscriptionData = null;
+    if (subscription && subscription.planId) {
+      subscriptionData = {
+        id: subscription._id,
+        plan: {
+          id: subscription.planId._id,
+          key: subscription.planId.key,
+          translations: subscription.planId.translations,
+          subscriptionOptions: subscription.planId.subscriptionOptions
+        },
+        type: subscription.type,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        status: subscription.status
+      };
+    }
+    
+    // Check newsletter subscription
+    const newsletterSub = await Newsletter.findOne({ email: user.email });
+    
     res.status(200).json({
-      user
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        profileImage: user.profileImage,
+        role: user.role,
+        subscriptionStatus: user.subscriptionStatus,
+        subscription: subscriptionData,
+        isNewsletterSubscribed: !!newsletterSub,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
     });
   } catch (error) {
     console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Internal server error.' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error.' 
+    });
   }
 };
 
