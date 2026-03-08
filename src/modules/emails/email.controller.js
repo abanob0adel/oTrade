@@ -126,8 +126,32 @@ export const sendBulkEmail = async (req, res) => {
       console.log(`⚠️ Test mode enabled. Filtered from ${originalCount} to ${recipients.length} verified recipients`);
     }
 
-    // Prepare email list
-    const emailList = recipients.map(user => user.email);
+    // Prepare email list and validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailList = recipients
+      .map(user => user.email)
+      .filter(email => {
+        if (!email || typeof email !== 'string') {
+          console.warn('⚠️ Skipping invalid email (empty or not string):', email);
+          return false;
+        }
+        const trimmedEmail = email.trim();
+        if (!emailRegex.test(trimmedEmail)) {
+          console.warn('⚠️ Skipping invalid email format:', trimmedEmail);
+          return false;
+        }
+        return true;
+      })
+      .map(email => email.trim().toLowerCase());
+
+    if (emailList.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid email addresses found in recipients'
+      });
+    }
+
+    console.log(`Valid emails after filtering: ${emailList.length} out of ${recipients.length}`);
 
     // Send email using Resend
     // Note: Resend has a limit on batch sending, so we might need to chunk
@@ -145,6 +169,9 @@ export const sendBulkEmail = async (req, res) => {
 
     for (let i = 0; i < batches.length; i++) {
       try {
+        console.log(`📧 Sending batch ${i + 1}/${batches.length} with ${batches[i].length} emails...`);
+        console.log(`Recipients: ${batches[i].join(', ')}`);
+        
         const { data, error } = await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL || 'OTrade <onboarding@resend.dev>',
           to: batches[i],
@@ -153,29 +180,34 @@ export const sendBulkEmail = async (req, res) => {
         });
 
         if (error) {
-          console.error(`Batch ${i + 1} error:`, error);
+          console.error(`❌ Batch ${i + 1} error:`, error);
           errors.push({ batch: i + 1, error });
         } else {
-          console.log(`Batch ${i + 1} sent successfully`);
+          console.log(`✅ Batch ${i + 1} sent successfully!`);
+          console.log(`Email ID: ${data.id}`);
+          console.log(`Check status at: https://resend.com/emails/${data.id}`);
           results.push({ batch: i + 1, data });
         }
       } catch (error) {
-        console.error(`Batch ${i + 1} exception:`, error);
+        console.error(`❌ Batch ${i + 1} exception:`, error);
         errors.push({ batch: i + 1, error: error.message });
       }
     }
 
     res.status(200).json({
       success: true,
-      message: `Email sent to ${recipients.length} recipients in ${batches.length} batches`,
+      message: `Email sent to ${emailList.length} valid recipients in ${batches.length} batches`,
       data: {
         totalRecipients: recipients.length,
+        validEmails: emailList.length,
+        invalidEmails: recipients.length - emailList.length,
         totalBatches: batches.length,
         successfulBatches: results.length,
         failedBatches: errors.length,
         results,
         errors: errors.length > 0 ? errors : undefined
-      }
+      },
+      note: 'Emails sent successfully. If recipients are not receiving emails, check: 1) Spam/Junk folders, 2) DNS records (SPF, DKIM, DMARC) are configured at https://resend.com/domains, 3) Email status at https://resend.com/emails'
     });
 
   } catch (error) {
