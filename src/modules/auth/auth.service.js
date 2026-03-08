@@ -56,11 +56,6 @@ const register = async (userData) => {
     subscriptionExpiry: user.subscriptionExpiry
   });
   
-  // Send welcome email (non-blocking)
-  sendWelcomeEmail(user.email, user.name).catch(err => {
-    console.error('Failed to send welcome email:', err.message);
-  });
-  
   return { 
     message: 'User registered successfully',
     token,
