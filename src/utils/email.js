@@ -135,7 +135,7 @@ export const sendPasswordResetEmail = async (to, resetCode, userName) => {
     console.log(`📧 Sending password reset code to: ${to}`);
     
     const { data, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'OTrade <noreply@otrade.ae>',
+      from: process.env.RESEND_FROM_EMAIL || 'OTrade <hello@otrade.ae>',
       to: [to],
       subject: 'Password Reset Code - OTrade',
       html: htmlContent
@@ -232,7 +232,7 @@ export const sendWelcomeEmail = async (to, userName) => {
     console.log(`📧 Sending welcome email to: ${to}`);
     
     const { data, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'OTrade <noreply@otrade.ae>',
+      from: process.env.RESEND_FROM_EMAIL || 'OTrade <hello@otrade.ae>',
       to: [to],
       subject: 'Welcome to OTrade! 🎉',
       html: htmlContent

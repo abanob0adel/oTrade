@@ -51,13 +51,20 @@ Value: [provided by Resend]
 TTL: 3600
 ```
 
-#### DMARC Record (TXT)
+#### DMARC Record (TXT) - ⚠️ REQUIRED
 ```
 Type: TXT
 Name: _dmarc
-Value: v=DMARC1; p=none; rua=mailto:dmarc@otrade.ae
+Value: v=DMARC1; p=quarantine; rua=mailto:dmarc@otrade.ae; pct=100; adkim=s; aspf=s
 TTL: 3600
 ```
+
+**Explanation:**
+- `p=quarantine` - Quarantine emails that fail authentication (send to spam)
+- `rua=mailto:dmarc@otrade.ae` - Send DMARC reports to this email
+- `pct=100` - Apply policy to 100% of emails
+- `adkim=s` - Strict DKIM alignment
+- `aspf=s` - Strict SPF alignment
 
 ### Step 3: Verify Records in Resend
 1. After adding DNS records, wait 5-10 minutes
@@ -123,9 +130,11 @@ You can check email delivery status in Resend dashboard:
 
 ```env
 RESEND_API_KEY=re_7rdZDzAQ_5hsEutGpWqJDvHjfiwr4vTVD
-RESEND_FROM_EMAIL=OTrade <noreply@otrade.ae>
+RESEND_FROM_EMAIL=OTrade <hello@otrade.ae>
 RESEND_TEST_MODE=false
 ```
+
+**Note:** Changed from `noreply@otrade.ae` to `hello@otrade.ae` to improve deliverability and trust.
 
 ## Next Steps
 

@@ -173,7 +173,7 @@ export const sendBulkEmail = async (req, res) => {
         console.log(`Recipients: ${batches[i].join(', ')}`);
         
         const { data, error } = await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'OTrade <onboarding@resend.dev>',
+          from: process.env.RESEND_FROM_EMAIL || 'OTrade <hello@otrade.ae>',
           to: batches[i],
           subject: subject,
           html: htmlContent
