@@ -153,61 +153,76 @@ export const sendBulkEmail = async (req, res) => {
 
     console.log(`Valid emails after filtering: ${emailList.length} out of ${recipients.length}`);
 
-    // Send email using Resend
-    // Note: Resend has a limit on batch sending, so we might need to chunk
-    const BATCH_SIZE = 50; // Resend's batch limit
-    const batches = [];
-    
-    for (let i = 0; i < emailList.length; i += BATCH_SIZE) {
-      batches.push(emailList.slice(i, i + BATCH_SIZE));
-    }
-
-    console.log(`Sending ${batches.length} batches...`);
+    // Send emails individually (one email per recipient)
+    // This is more professional and protects privacy
+    console.log(`Sending ${emailList.length} individual emails...`);
 
     const results = [];
     const errors = [];
+    let successCount = 0;
+    let failCount = 0;
 
-    for (let i = 0; i < batches.length; i++) {
+    // Send with delay to avoid rate limiting
+    for (let i = 0; i < emailList.length; i++) {
       try {
-        console.log(`📧 Sending batch ${i + 1}/${batches.length} with ${batches[i].length} emails...`);
-        console.log(`Recipients: ${batches[i].join(', ')}`);
+        const recipientEmail = emailList[i];
+        const recipientUser = recipients.find(u => u.email.toLowerCase().trim() === recipientEmail);
+        
+        console.log(`📧 Sending email ${i + 1}/${emailList.length} to: ${recipientEmail}`);
         
         const { data, error } = await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL || 'OTrade <hello@otrade.ae>',
-          to: batches[i],
+          to: [recipientEmail], // Send to one recipient only
           subject: subject,
           html: htmlContent
         });
 
         if (error) {
-          console.error(`❌ Batch ${i + 1} error:`, error);
-          errors.push({ batch: i + 1, error });
+          console.error(`❌ Failed to send to ${recipientEmail}:`, error);
+          errors.push({ 
+            email: recipientEmail, 
+            error: error.message || error 
+          });
+          failCount++;
         } else {
-          console.log(`✅ Batch ${i + 1} sent successfully!`);
-          console.log(`Email ID: ${data.id}`);
-          console.log(`Check status at: https://resend.com/emails/${data.id}`);
-          results.push({ batch: i + 1, data });
+          console.log(`✅ Sent successfully to ${recipientEmail} (ID: ${data.id})`);
+          results.push({ 
+            email: recipientEmail, 
+            emailId: data.id 
+          });
+          successCount++;
+        }
+
+        // Add small delay between emails to avoid rate limiting (100ms)
+        if (i < emailList.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       } catch (error) {
-        console.error(`❌ Batch ${i + 1} exception:`, error);
-        errors.push({ batch: i + 1, error: error.message });
+        console.error(`❌ Exception sending to ${emailList[i]}:`, error);
+        errors.push({ 
+          email: emailList[i], 
+          error: error.message 
+        });
+        failCount++;
       }
     }
 
     res.status(200).json({
       success: true,
-      message: `Email sent to ${emailList.length} valid recipients in ${batches.length} batches`,
+      message: `Email sending completed: ${successCount} successful, ${failCount} failed out of ${emailList.length} recipients`,
       data: {
         totalRecipients: recipients.length,
         validEmails: emailList.length,
         invalidEmails: recipients.length - emailList.length,
-        totalBatches: batches.length,
-        successfulBatches: results.length,
-        failedBatches: errors.length,
-        results,
-        errors: errors.length > 0 ? errors : undefined
+        successfulSends: successCount,
+        failedSends: failCount,
+        successRate: `${((successCount / emailList.length) * 100).toFixed(1)}%`,
+        results: results.slice(0, 10), // Show first 10 successful sends
+        errors: errors.length > 0 ? errors.slice(0, 10) : undefined, // Show first 10 errors
+        totalResults: results.length,
+        totalErrors: errors.length
       },
-      note: 'Emails sent successfully. If recipients are not receiving emails, check: 1) Spam/Junk folders, 2) DNS records (SPF, DKIM, DMARC) are configured at https://resend.com/domains, 3) Email status at https://resend.com/emails'
+      note: 'Emails sent individually to each recipient. Check Resend dashboard for delivery status: https://resend.com/emails'
     });
 
   } catch (error) {
