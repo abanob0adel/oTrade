@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import User from '../users/user.model.js';
 import Subscription from '../subscriptions/subscription.model.js';
+import { addUnsubscribeFooter, validateEmailContent } from '../../utils/emailTemplate.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -31,6 +32,16 @@ export const sendBulkEmail = async (req, res) => {
         error: 'Recipient type is required (all, subscribed, unsubscribed, selected)'
       });
     }
+
+    // Validate email content for spam triggers
+    const validation = validateEmailContent(subject, htmlContent);
+    if (validation.warnings.length > 0) {
+      console.warn('⚠️ Email content warnings:', validation.warnings);
+    }
+
+    // Add unsubscribe footer to content
+    const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://otrade.ae'}/unsubscribe`;
+    const finalHtmlContent = addUnsubscribeFooter(htmlContent, unsubscribeUrl);
 
     let recipients = [];
 
@@ -174,7 +185,22 @@ export const sendBulkEmail = async (req, res) => {
           from: process.env.RESEND_FROM_EMAIL || 'OTrade <hello@otrade.ae>',
           to: [recipientEmail], // Send to one recipient only
           subject: subject,
-          html: htmlContent
+          html: finalHtmlContent,
+          headers: {
+            'List-Unsubscribe': `<${unsubscribeUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            'X-Entity-Ref-ID': recipientUser?._id?.toString() || 'unknown'
+          },
+          tags: [
+            {
+              name: 'category',
+              value: recipientType
+            },
+            {
+              name: 'campaign',
+              value: 'bulk_email'
+            }
+          ]
         });
 
         if (error) {
@@ -217,6 +243,7 @@ export const sendBulkEmail = async (req, res) => {
         successfulSends: successCount,
         failedSends: failCount,
         successRate: `${((successCount / emailList.length) * 100).toFixed(1)}%`,
+        contentValidation: validation,
         results: results.slice(0, 10), // Show first 10 successful sends
         errors: errors.length > 0 ? errors.slice(0, 10) : undefined, // Show first 10 errors
         totalResults: results.length,
