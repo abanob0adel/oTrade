@@ -189,7 +189,10 @@ export const sendBulkEmail = async (req, res) => {
           headers: {
             'List-Unsubscribe': `<${unsubscribeUrl}>`,
             'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-            'X-Entity-Ref-ID': recipientUser?._id?.toString() || 'unknown'
+            'X-Entity-Ref-ID': recipientUser?._id?.toString() || 'unknown',
+            'Importance': 'high',
+            'X-Priority': '1',
+            'X-MSMail-Priority': 'High'
           },
           tags: [
             {
