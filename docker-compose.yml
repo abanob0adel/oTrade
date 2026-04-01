@@ -3,7 +3,7 @@ services:
     build: .
     container_name: otrade_api
     restart: always
-    expose:
-      - "5000"
+    ports:
+      - "5000:5000"
     env_file:
       - .env
