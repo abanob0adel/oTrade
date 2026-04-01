@@ -1,0 +1,9 @@
+services:
+  api:
+    build: .
+    container_name: otrade_api
+    restart: always
+    expose:
+      - "5000"
+    env_file:
+      - .env
