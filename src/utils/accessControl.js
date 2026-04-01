@@ -1,0 +1,410 @@
+import Plan from '../modules/plans/plan.model.js';
+
+/**
+ * Access Control Utilities
+ * Handles plan-based access control and content filtering
+ * 
+ * Example usage for fetching a course by ID with Accept-Language header:
+ * 
+ * GET /api/courses/123
+ * Accept-Language: ar
+ * Authorization: Bearer <token>
+ * 
+ * Response for admin:
+ * {
+ *   "course": {
+ *     "id": "123",
+ *     "plans": ["free", "pro"],
+ *     "translations": {
+ *       "ar": { "title": "الدورة التدريبية", "description": "وصف الدورة", "content": "محتوى الدورة" },
+ *       "en": { "title": "Course Title", "description": "Course Description", "content": "Course Content" }
+ *     },
+ *     "contentUrl": "https://example.com/video.mp4",
+ *     "coverImageUrl": "https://example.com/image.jpg",
+ *     "createdAt": "2023-01-01T00:00:00.000Z"
+ *   }
+ * }
+ * 
+ * Response for user with access:
+ * {
+ *   "course": {
+ *     "id": "123",
+ *     "translations": [{
+ *       "language": "ar",
+ *       "title": "الدورة التدريبية",
+ *       "description": "وصف الدورة",
+ *       "content": "محتوى الدورة"
+ *     }],
+ *     "contentUrl": "https://example.com/video.mp4",
+ *     "coverImageUrl": "https://example.com/image.jpg",
+ *     "createdAt": "2023-01-01T00:00:00.000Z"
+ *   }
+ * }
+ * 
+ * Response for user without access:
+ * {
+ *   "course": {
+ *     "id": "123",
+ *     "translations": [{
+ *       "language": "ar",
+ *       "title": "الدورة التدريبية",
+ *       "description": "وصف الدورة"
+ *     }],
+ *     "locked": true,
+ *     "createdAt": "2023-01-01T00:00:00.000Z"
+ *   }
+ * }
+ */
+
+/**
+ * Check if user has access to a psychology item based on Plan system
+ * 
+ * @param {Array} userPlanIds - Array of user's subscribed plan IDs
+ * @param {string} psychologyId - Psychology item ID to check access for
+ * @returns {Promise<boolean>} - True if user has access
+ */
+export const canAccessPsychology = async (userPlanIds, psychologyId) => {
+  if (!userPlanIds || !Array.isArray(userPlanIds) || userPlanIds.length === 0) {
+    return false;
+  }
+  
+  // Check if any of the user's plans include this psychology item
+  const userPlans = await Plan.find({
+    _id: { $in: userPlanIds },
+    'allowedContent.psychology': psychologyId
+  });
+  
+  return userPlans.length > 0;
+};
+
+/**
+ * Check if user has access based on their subscription plans
+ * 
+ * @param {Array} userPlans - Array of user's subscribed plan IDs
+ * @param {Array} requiredPlanIds - Array of required plan IDs for content
+ * @returns {boolean} - True if user has access
+ */
+export const hasAccess = (userPlans, requiredPlanIds) => {
+  // Admin always has access (handled by middleware)
+  // This function checks if user has at least ONE matching plan
+  
+  if (!userPlans || !Array.isArray(userPlans) || userPlans.length === 0) {
+    // User has no plans, only allow content with no required plans
+    return !requiredPlanIds || !Array.isArray(requiredPlanIds) || requiredPlanIds.length === 0;
+  }
+  
+  if (!requiredPlanIds || !Array.isArray(requiredPlanIds) || requiredPlanIds.length === 0) {
+    // Content has no plan restrictions, allow access
+    return true;
+  }
+  
+  // Check if user has at least one matching plan
+  // Convert to string IDs for comparison
+  const userPlanIds = userPlans.map(plan => plan.toString());
+  const requiredPlanIdsStr = requiredPlanIds.map(plan => plan.toString());
+  
+  return userPlanIds.some(userPlanId => requiredPlanIdsStr.includes(userPlanId));
+};
+
+/**
+ * Filter content based on user access
+ * Removes contentUrl and full content if user doesn't have access
+ * 
+ * @param {Object} content - Content object with translations
+ * @param {boolean} userHasAccess - Whether user has access
+ * @param {boolean} isAdmin - Whether requester is admin
+ * @returns {Object} - Filtered content
+ */
+export const filterContentByAccess = (content, userHasAccess, isAdmin = false) => {
+  // Admin gets full content always
+  if (isAdmin) {
+    return content;
+  }
+  
+  // If user has access, return full content
+  if (userHasAccess) {
+    return content;
+  }
+  
+  // User doesn't have access - create locked response
+  const lockedContent = {
+    id: content.id,
+    title: content.title || '',
+    description: content.description || '',
+    locked: true,
+    createdAt: content.createdAt,
+    updatedAt: content.updatedAt
+  };
+  
+  // Remove sensitive fields
+  delete lockedContent.contentUrl;
+  delete lockedContent.content;
+  
+  return lockedContent;
+};
+
+/**
+ * Format psychology content for API response with Plan-based access control
+ * Handles translation extraction and access control based on Plan system
+ * 
+ * @param {Object} psychology - Psychology document
+ * @param {Array} translations - Translation objects
+ * @param {string} requestedLang - Requested language from Accept-Language header
+ * @param {Array} userPlanIds - User's subscribed plan IDs
+ * @param {boolean} isAdmin - Whether requester is admin
+ * @returns {Promise<Object>} - Formatted content
+ */
+export const formatPsychologyContentResponse = async (psychology, translations, requestedLang, userPlanIds = [], isAdmin = false) => {
+  // Check if user has access based on Plan system
+  const userHasAccess = isAdmin || await canAccessPsychology(userPlanIds, psychology._id);
+  
+  // Find the translation matching the requested language, fallback to English
+  const requestedTranslation = 
+    translations.find(t => t.language === requestedLang) ||
+    translations.find(t => t.language === 'en');
+  
+  // Base content object
+  const content = {
+    id: psychology._id,
+    createdAt: psychology.createdAt,
+    updatedAt: psychology.updatedAt
+  };
+  
+  // Add key field
+  if (psychology.key) content.key = psychology.key;
+  
+  // Format translations array based on access
+  if (userHasAccess) {
+    // User has access: return requested translation with full content
+    content.translations = requestedTranslation ? [{
+      language: requestedTranslation.language,
+      title: requestedTranslation.title,
+      description: requestedTranslation.description,
+      content: requestedTranslation.content
+    }] : [];
+    
+    // Add content fields if present
+    if (psychology.contentUrl) content.contentUrl = psychology.contentUrl;
+    if (psychology.coverImageUrl) content.coverImageUrl = psychology.coverImageUrl;
+    if (psychology.fileUrl) content.fileUrl = psychology.fileUrl;
+    if (psychology.videoUrl) content.videoUrl = psychology.videoUrl;
+    
+    // Add plans field for admin users only
+    if (isAdmin && psychology.plans) content.plans = psychology.plans;
+  } else {
+    // User has no access: return requested translation without content
+    content.translations = requestedTranslation ? [{
+      language: requestedTranslation.language,
+      title: requestedTranslation.title,
+      description: requestedTranslation.description
+    }] : [];
+    
+    // Add locked indicator
+    content.locked = true;
+  }
+  
+  return content;
+};
+
+/**
+ * Format content for API response
+ * Handles translation extraction and access control
+ * Returns single translation based on Accept-Language header
+ * 
+ * @param {Object} item - Database item
+ * @param {Array} translations - Translation objects
+ * @param {string} requestedLang - Requested language from Accept-Language header (ar or en)
+ * @param {Array} userPlans - User's subscription plans
+ * @param {boolean} isAdmin - Whether requester is admin
+ * @returns {Object} - Formatted content
+ */
+export const formatContentResponse = (item, translations, requestedLang, userPlans = [], isAdmin = false) => {
+  // Use existing isPaid and isInSubscription from the database document
+  const isPaid = item.isPaid;
+  const isInSubscription = item.isInSubscription;
+  
+  // NEW BUSINESS LOGIC: Compute access based on requiredPlans array
+  const hasRequiredPlans = Array.isArray(item.requiredPlans) && item.requiredPlans.length > 0;
+  const locked = hasRequiredPlans && !isAdmin;
+  
+  // Check if user has access
+  const userHasAccess = isAdmin || hasAccess(userPlans, item.requiredPlans);
+  
+  // Find the translation matching the requested language, fallback to English
+  const requestedTranslation = 
+    translations.find(t => t.language === requestedLang) ||
+    translations.find(t => t.language === 'en');
+  
+  // Base content object
+  const content = {
+    id: item._id,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt
+  };
+  
+  // Set computed fields
+  content.isPaid = isPaid;
+  content.isInSubscription = isInSubscription;
+  
+  // Format translations array based on access (single translation based on language)
+  if (userHasAccess) {
+    // User has access: return requested translation with full content
+    content.translations = requestedTranslation ? [{
+      language: requestedTranslation.language,
+      title: requestedTranslation.title,
+      description: requestedTranslation.description,
+      content: requestedTranslation.content
+    }] : [];
+    
+    // Add contentUrl and coverImageUrl if present
+    if (item.contentUrl) {
+      content.contentUrl = item.contentUrl;
+    }
+    if (item.coverImageUrl) {
+      content.coverImageUrl = item.coverImageUrl;
+    }
+    // Add image field if present (used by testimonials)
+    if (item.image) {
+      content.image = item.image;
+    }
+    
+    // Add plans field for admin users only
+    if (isAdmin && item.plans) {
+      content.plans = item.plans;
+    }
+  } else {
+    // User has no access: return requested translation without content
+    content.translations = requestedTranslation ? [{
+      language: requestedTranslation.language,
+      title: requestedTranslation.title,
+      description: requestedTranslation.description
+    }] : [];
+    
+    // Add locked indicator
+    content.locked = locked;
+  }
+
+  return content;
+};
+
+/**
+ * Format admin response with full translations object
+ * 
+ * @param {Object} item - Database item
+ * @param {Array} translations - Translation objects
+ * @returns {Object} - Formatted admin response
+ */
+export const formatAdminResponse = (item, translations) => {
+  // Use existing isPaid and isInSubscription from the database document
+  const isPaid = item.isPaid;
+  const isInSubscription = item.isInSubscription;
+  
+  // Format translations as object for admin response
+  const translationsObject = {};
+  translations.forEach(t => {
+    translationsObject[t.language] = {
+      title: t.title,
+      description: t.description,
+      content: t.content
+    };
+  });
+  
+  const response = {
+    id: item._id,
+    plans: item.plans,
+    requiredPlans: item.requiredPlans, // Include new requiredPlans field
+    translations: translationsObject,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt
+  };
+  
+  // Add contentUrl and coverImageUrl if present
+  if (item.contentUrl) {
+    response.contentUrl = item.contentUrl;
+  } 
+  if (item.coverImageUrl) {
+    response.coverImageUrl = item.coverImageUrl;
+  }
+  // Add image field if present (used by testimonials)
+  if (item.image) {
+    response.image = item.image;
+  }
+  
+  // Add module-specific fields
+  if (item.level) response.level = item.level;
+  if (item.market) response.market = item.market;
+  if (item.type) response.type = item.type;
+  if (item.date) response.date = item.date;
+  if (item.isLive !== undefined) response.isLive = item.isLive;
+  if (item.price !== undefined) response.price = item.price;
+  // Add testimonial-specific fields
+  if (item.companyName) response.companyName = item.companyName;
+  if (item.isActive !== undefined) response.isActive = item.isActive;
+  // Preserve isPaid and isInSubscription from the database document
+  response.isPaid = isPaid;
+  response.isInSubscription = isInSubscription;
+
+  return response;
+};
+
+/**
+ * Format plan response based on Accept-Language header
+ * Returns only the requested translation object
+ * 
+ * @param {Object} plan - Plan document
+ * @param {string} requestedLang - Requested language from Accept-Language header (ar or en)
+ * @returns {Object} - Formatted plan response with single translation
+ */
+export const formatPlanResponse = (plan, requestedLang) => {
+  // Determine the language to use (default to 'en' if requested language is not supported)
+  const lang = ['en', 'ar'].includes(requestedLang) ? requestedLang : 'en';
+  
+  // Extract the requested translation
+  const requestedTranslation = plan.translations[lang];
+  
+  // Create the response object with the single translation
+  const response = {
+    _id: plan._id,
+    key: plan.key,
+    price: plan.price,
+    isActive: plan.isActive,
+    translation: requestedTranslation,
+    allowedContent: plan.allowedContent,
+    // NEW FIELDS: durationType and features
+    durationType: plan.durationType,
+    features: plan.features,
+    // NEW FIELD: subscriptionOptions
+    subscriptionOptions: plan.subscriptionOptions,
+    createdAt: plan.createdAt,
+    updatedAt: plan.updatedAt
+  };
+  
+  return response;
+};
+
+/**
+ * Check if a user's subscription is active
+ * 
+ * @param {Object} user - User document
+ * @returns {boolean} - True if subscription is active
+ */
+export const isSubscriptionActive = (user) => {
+  if (!user || !user.subscription || !user.subscription.endDate) {
+    // For backward compatibility, check the legacy subscriptionStatus
+    if (user && user.subscriptionStatus === 'active') {
+      // Check if legacy subscription hasn't expired
+      if (user.subscriptionExpiry && new Date(user.subscriptionExpiry) > new Date()) {
+        return true;
+      } else if (!user.subscriptionExpiry) {
+        // If no expiry date, assume active
+        return user.subscriptionStatus === 'active';
+      }
+    }
+    return false;
+  }
+  
+  // Check new subscription system
+  const now = new Date();
+  return user.subscription.endDate > now;
+};
+ 
