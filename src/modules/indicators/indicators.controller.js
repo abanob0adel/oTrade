@@ -45,7 +45,6 @@ export const createIndicator = async (req, res) => {
     const date = req.body.date;
     const translations = parseTranslations(req.body);
 
-    // Upload cover image if file provided
     if (req.files?.coverImage) {
       try { coverImageUrl = await uploadImage(req.files.coverImage[0], 'indicators'); }
       catch { return res.status(400).json({ error: 'Failed to upload cover image' }); }
@@ -192,11 +191,9 @@ export const getIndicatorById = async (req, res) => {
       updates: indicator.updates
     };
 
-    // Free content
     if (!indicator.plans || indicator.plans.length === 0)
       return res.status(200).json({ indicator: { ...base, locked: false } });
 
-    // Not logged in
     if (!req.user)
       return res.status(403).json({
         error: 'Access denied',
@@ -204,11 +201,9 @@ export const getIndicatorById = async (req, res) => {
         indicator: { id: indicator._id, coverImageUrl: indicator.coverImageUrl, date: indicator.date, title: base.title, description: base.description, locked: true }
       });
 
-    // Admin
     if (isAdmin)
       return res.status(200).json({ indicator: { ...base, plans: indicator.plans, locked: false } });
 
-    // Check subscription
     const Subscription = (await import('../subscriptions/subscription.model.js')).default;
     const userSubscription = await Subscription.findOne({ userId: req.user._id, status: 'active' });
     const hasAccess = userSubscription?.planId && indicator.plans.some(p => p.toString() === userSubscription.planId.toString());
