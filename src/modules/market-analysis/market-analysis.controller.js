@@ -580,8 +580,8 @@ export const updateAnalysis = async (req, res) => {
     const categorySlug = categoryDoc?.slug || 'uncategorized';
 
     // Upload new images if provided
-    const coverImageFile = req.files?.find(f => f.fieldname === 'coverImage');
-    const imageFile = req.files?.find(f => f.fieldname === 'image');
+    const coverImageFile = req.files?.find(f => f.fieldname === 'coverImage') || req.files?.[0];
+    const imageFile = req.files?.find(f => f.fieldname === 'image') || (req.files?.length > 1 ? req.files[1] : null);
     
     if (coverImageFile) {
       console.log('Uploading new cover image...');
@@ -1061,7 +1061,9 @@ export const updateAnalysisUpdate = async (req, res) => {
     if (req.body['content[ar]']) content.ar = req.body['content[ar]'];
 
     // Upload new image if provided
-    const updateImageFile = req.files?.find(f => f.fieldname === 'updateImage');
+    const updateImageFile = req.files?.find(f => f.fieldname === 'updateImage') || 
+                            req.files?.find(f => f.fieldname === 'image') || 
+                            req.files?.[0];
     
     if (updateImageFile) {
       const categoryDoc = await Category.findById(analysis.category);
@@ -1075,7 +1077,10 @@ export const updateAnalysisUpdate = async (req, res) => {
       );
     }
 
-    // Update date if provided
+    // Auto-update date
+    analysis.updates[updateIndex].updatedAt = new Date();
+
+    // Override with provided date if valid
     if (req.body.updatedAt && req.body.updatedAt.trim()) {
       const newDate = new Date(req.body.updatedAt.trim());
       if (isNaN(newDate.getTime())) {
