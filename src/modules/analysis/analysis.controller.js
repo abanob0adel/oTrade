@@ -335,6 +335,9 @@ const updateAnalysis = async (req, res) => {
     if (contentUrl !== undefined) analysis.contentUrl = contentUrl;
     if (coverImageUrl !== undefined) analysis.coverImageUrl = coverImageUrl;
     
+    // Auto-update updatedAt on every update
+    analysis.updatedAt = new Date();
+    
     await analysis.save();
     
     // Update translations if provided
