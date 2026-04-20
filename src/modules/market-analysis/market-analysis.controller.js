@@ -791,7 +791,7 @@ export const addAnalysisUpdate = async (req, res) => {
     }
 
     // Validate update image
-    const updateImageFile = req.files?.find(f => f.fieldname === 'coverImage') || req.files?.[0];
+    const updateImageFile = req.files?.find(f => f.fieldname === 'updateImage');
     
     if (!updateImageFile) {
       return res.status(400).json({
@@ -1061,7 +1061,7 @@ export const updateAnalysisUpdate = async (req, res) => {
     if (req.body['content[ar]']) content.ar = req.body['content[ar]'];
 
     // Upload new image if provided
-    const updateImageFile = req.files?.find(f => f.fieldname === 'coverImage') || 
+    const updateImageFile = req.files?.find(f => f.fieldname === 'updateImage') || 
                             req.files?.find(f => f.fieldname === 'image') || 
                             req.files?.[0];
     
