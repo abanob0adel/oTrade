@@ -3,29 +3,47 @@ import Translation from '../translations/translation.model.js';
 import { createOrUpdateTranslation, getTranslationsByEntity } from '../translations/translation.service.js';
 import { validateTranslationsForCreate } from '../../utils/translationValidator.js';
 import { formatAdminResponse } from '../../utils/accessControl.js';
-import { uploadImage } from '../../utils/cloudinary.js';
+import bunnycdn from '../../utils/bunnycdn.js';
 import mongoose from 'mongoose';
 
 // Helper to parse translations from FormData or JSON
 const parseTranslations = (body) => {
+  // Format 1: translations as JSON string or array
   if (body.translations) {
     if (typeof body.translations === 'string') {
-      try { return JSON.parse(body.translations); } catch { return []; }
+      try { return JSON.parse(body.translations); } catch { /* fall through */ }
+    } else if (Array.isArray(body.translations)) {
+      return body.translations;
     }
-    return body.translations;
   }
-  const enTitle = body['title[en]'] || body['title.en'];
-  const arTitle = body['title[ar]'] || body['title.ar'];
-  const enDescription = body['description[en]'] || body['description.en'];
-  const arDescription = body['description[ar]'] || body['description.ar'];
-  const enContent = body['content[en]'] || body['content.en'];
-  const arContent = body['content[ar]'] || body['content.ar'];
 
   const translations = [];
-  if (enTitle || enDescription || enContent)
-    translations.push({ language: 'en', title: enTitle || '', description: enDescription || '', content: enContent || '' });
-  if (arTitle || arDescription || arContent)
-    translations.push({ language: 'ar', title: arTitle || '', description: arDescription || '', content: arContent || '' });
+
+  // Format 2: title[en], title[ar] (parsed by express as objects)
+  const titles = body.title || {};
+  const descriptions = body.description || {};
+  const contents = body.content || {};
+
+  if (titles.en || descriptions.en || contents.en)
+    translations.push({ language: 'en', title: titles.en || '', description: descriptions.en || '', content: contents.en || '' });
+  if (titles.ar || descriptions.ar || contents.ar)
+    translations.push({ language: 'ar', title: titles.ar || '', description: descriptions.ar || '', content: contents.ar || '' });
+
+  if (translations.length) return translations;
+
+  // Format 3: title_en, title_ar flat keys
+  const enTitle = body.title_en || body['title[en]'];
+  const arTitle = body.title_ar || body['title[ar]'];
+  const enDesc  = body.description_en || body['description[en]'];
+  const arDesc  = body.description_ar || body['description[ar]'];
+  const enCont  = body.content_en || body['content[en]'];
+  const arCont  = body.content_ar || body['content[ar]'];
+
+  if (enTitle || enDesc || enCont)
+    translations.push({ language: 'en', title: enTitle || '', description: enDesc || '', content: enCont || '' });
+  if (arTitle || arDesc || arCont)
+    translations.push({ language: 'ar', title: arTitle || '', description: arDesc || '', content: arCont || '' });
+
   return translations;
 };
 
@@ -46,10 +64,10 @@ export const createIndicator = async (req, res) => {
     const translations = parseTranslations(req.body);
 
     if (req.files?.coverImage) {
-      try { coverImageUrl = await uploadImage(req.files.coverImage[0], 'indicators'); }
+      try { coverImageUrl = await bunnycdn.uploadImage(req.files.coverImage[0].buffer, req.files.coverImage[0].originalname, 'indicators'); }
       catch { return res.status(400).json({ error: 'Failed to upload cover image' }); }
     } else if (coverImageUrl?.startsWith('data:image')) {
-      try { coverImageUrl = await uploadImage(coverImageUrl, 'indicators'); }
+      try { coverImageUrl = await bunnycdn.uploadImage(Buffer.from(coverImageUrl.split(',')[1], 'base64'), 'cover.jpg', 'indicators'); }
       catch { return res.status(400).json({ error: 'Failed to upload cover image' }); }
     }
 
@@ -90,10 +108,10 @@ export const updateIndicator = async (req, res) => {
     const translations = parseTranslations(req.body);
 
     if (req.files?.coverImage) {
-      try { coverImageUrl = await uploadImage(req.files.coverImage[0], 'indicators'); }
+      try { coverImageUrl = await bunnycdn.uploadImage(req.files.coverImage[0].buffer, req.files.coverImage[0].originalname, 'indicators'); }
       catch { return res.status(400).json({ error: 'Failed to upload cover image' }); }
     } else if (coverImageUrl?.startsWith('data:image')) {
-      try { coverImageUrl = await uploadImage(coverImageUrl, 'indicators'); }
+      try { coverImageUrl = await bunnycdn.uploadImage(Buffer.from(coverImageUrl.split(',')[1], 'base64'), 'cover.jpg', 'indicators'); }
       catch { return res.status(400).json({ error: 'Failed to upload cover image' }); }
     }
 
@@ -194,6 +212,14 @@ export const getIndicatorById = async (req, res) => {
     if (!indicator.plans || indicator.plans.length === 0)
       return res.status(200).json({ indicator: { ...base, locked: false } });
 
+    // Check if any of the indicator's plans is a free plan
+    const Plan = (await import('../plans/plan.model.js')).default;
+    const indicatorPlans = await Plan.find({ _id: { $in: indicator.plans } });
+    const hasFreePlan = indicatorPlans.some(p => p.isFree === true);
+
+    if (hasFreePlan)
+      return res.status(200).json({ indicator: { ...base, locked: false } });
+
     if (!req.user)
       return res.status(403).json({
         error: 'Access denied',
@@ -234,17 +260,17 @@ export const addIndicatorUpdate = async (req, res) => {
     if (!indicator) return res.status(404).json({ error: 'Indicator not found.' });
 
     let coverImageUrl = req.body.coverImageUrl;
-    const { title, description, date } = req.body;
+    const { title, description } = req.body;
 
     if (req.files?.coverImage) {
-      try { coverImageUrl = await uploadImage(req.files.coverImage[0], 'indicators/updates'); }
+      try { coverImageUrl = await bunnycdn.uploadImage(req.files.coverImage[0].buffer, req.files.coverImage[0].originalname, 'indicators/updates'); }
       catch { return res.status(400).json({ error: 'Failed to upload image' }); }
     } else if (coverImageUrl?.startsWith('data:image')) {
-      try { coverImageUrl = await uploadImage(coverImageUrl, 'indicators/updates'); }
+      try { coverImageUrl = await bunnycdn.uploadImage(Buffer.from(coverImageUrl.split(',')[1], 'base64'), 'cover.jpg', 'indicators/updates'); }
       catch { return res.status(400).json({ error: 'Failed to upload image' }); }
     }
 
-    indicator.updates.push({ coverImageUrl, title, description, date });
+    indicator.updates.push({ coverImageUrl, title, description, date: new Date() });
     await indicator.save();
 
     res.status(201).json({ message: 'Update added successfully.', indicator });
