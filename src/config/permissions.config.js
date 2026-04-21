@@ -21,7 +21,8 @@ const PERMISSIONS_CONFIG = {
   partners: ['view', 'create', 'update', 'delete'],
   brokers: ['view', 'create', 'update', 'delete'],
   news: ['view', 'create', 'update', 'delete'],
-  emails: ['view', 'create', 'update', 'delete']
+  emails: ['view', 'create', 'update', 'delete'],
+  testimonials: ['view', 'create', 'update', 'delete']
 };
 
 export default PERMISSIONS_CONFIG;
