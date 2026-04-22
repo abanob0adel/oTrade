@@ -21,6 +21,7 @@ jobs:
           port: 22
           script: |
             cd ${{ secrets.SERVER_PATH }}
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
             docker compose down
             docker compose up -d --build
