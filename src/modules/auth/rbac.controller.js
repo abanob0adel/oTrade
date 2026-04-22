@@ -40,6 +40,7 @@ export const getCurrentUserPermissions = async (req, res) => {
       books: [],
       articles: [],
       partners: [],
+      brokers: [],
       news: [],
       emails: [],
       testimonials: []
