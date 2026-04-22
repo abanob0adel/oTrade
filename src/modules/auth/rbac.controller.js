@@ -43,8 +43,7 @@ export const getCurrentUserPermissions = async (req, res) => {
       brokers: [],
       news: [],
       emails: [],
-      testimonials: [],
-      indicators: []
+      testimonials: []
     };
 
     // Process permissions based on user type
