@@ -122,7 +122,11 @@ export const createTestimonial = async (req, res) => {
 
   } catch (error) {
     console.error('Error creating testimonial:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
   }
 };
 
