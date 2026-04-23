@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Testimonial from './testimonial.model.js';
 import { createOrUpdateTranslation, getTranslationsByEntity, deleteTranslationsByEntity } from '../translations/translation.service.js';
-import { uploadImage } from '../../utils/cloudinary.js';
+import bunnycdn from '../../utils/bunnycdn.js';
 import { formatContentResponse, formatAdminResponse } from '../../utils/accessControl.js';
 
 /**
@@ -21,9 +21,10 @@ export const createTestimonial = async (req, res) => {
     // Handle image upload
     if (req.files?.image) {
       const imageFile = req.files.image[0];
-      image = await uploadImage(imageFile, 'testimonials');
+      image = await bunnycdn.uploadFile(imageFile.buffer, imageFile.originalname, 'testimonials');
     } else if (req.body.image?.startsWith('data:image')) {
-      image = await uploadImage(req.body.image, 'testimonials');
+      const buffer = Buffer.from(req.body.image.split(',')[1], 'base64');
+      image = await bunnycdn.uploadFile(buffer, `testimonial-${Date.now()}.jpg`, 'testimonials');
     } else {
       image = req.body.image;
     }
@@ -214,9 +215,10 @@ export const updateTestimonial = async (req, res) => {
     // Handle image update
     if (req.files?.image) {
       const imageFile = req.files.image[0];
-      image = await uploadImage(imageFile, 'testimonials');
+      image = await bunnycdn.uploadFile(imageFile.buffer, imageFile.originalname, 'testimonials');
     } else if (req.body.image?.startsWith('data:image')) {
-      image = await uploadImage(req.body.image, 'testimonials');
+      const buffer = Buffer.from(req.body.image.split(',')[1], 'base64');
+      image = await bunnycdn.uploadFile(buffer, `testimonial-${Date.now()}.jpg`, 'testimonials');
     } else if (req.body.image !== undefined) {
       image = req.body.image;
     }

@@ -7,7 +7,7 @@ const app = express();
 
 // Connect to MongoDB
 connectDB();
-          //نهقخ   نن
+          //نهقخ   ننkkkk
 // Enable CORS with specific origins
 const corsOptions = {
   origin: [
