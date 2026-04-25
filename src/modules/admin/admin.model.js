@@ -39,7 +39,9 @@ const adminSchema = new mongoose.Schema({
       articles: [String],
       partners: [String],
       news: [String],
-      emails: [String]
+      emails: [String],
+      indicators: [String],
+      brokers: [String]
     }
   ],
   isActive: {
