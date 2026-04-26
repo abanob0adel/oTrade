@@ -23,7 +23,13 @@ const translationSchema = new mongoose.Schema({
       'about-settings',
       'about-team',
       'partner',
-      'indicator'
+      'indicator',
+      'expert-advisor',
+      'ea-key-feature',
+      'ea-recommendation',
+      'ea-pro',
+      'ea-con',
+      'ea-update'
     ],
     required: true
   },

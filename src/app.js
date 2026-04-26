@@ -71,6 +71,7 @@ import emailRoutes from './modules/emails/email.routes.js';
 import newsletterRoutes from './modules/newsletter/newsletter.routes.js';
 import aboutRoutes from './modules/about/about.routes.js';
 import indicatorRoutes from './modules/indicators/indicators.routes.js';
+import expertAdvisorRoutes from './modules/expert-advisors/expert-advisors.routes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/subscriptions', subscriptionRoutes);
@@ -102,6 +103,7 @@ app.use('/api/emails', emailRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/about', aboutRoutes);
 app.use('/api/indicators', indicatorRoutes);
+app.use('/api/expert-advisors', expertAdvisorRoutes);
 //app.use('/api/payments', paymentRoutes);
 // Health check endpoint
 app.get('/health', (req, res) => {

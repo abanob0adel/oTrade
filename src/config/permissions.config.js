@@ -22,7 +22,8 @@ const PERMISSIONS_CONFIG = {
   brokers: ['view', 'create', 'update', 'delete'],
   news: ['view', 'create', 'update', 'delete'],
   emails: ['view', 'create', 'update', 'delete'],
-  indicators: ['view', 'create', 'update', 'delete']
+  indicators: ['view', 'create', 'update', 'delete'],
+  'expert-advisors': ['view', 'create', 'update', 'delete']
 };
 
 export default PERMISSIONS_CONFIG;
