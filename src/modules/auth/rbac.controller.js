@@ -24,36 +24,24 @@ export const getCurrentUserPermissions = async (req, res) => {
       });
     }
 
-    // Initialize normalized permissions structure
-    const normalizedPermissions = {
-      courses: [],
-      plans: [],
-      webinars: [],
-      psychology: [],
-      analysis: [],
-      users: [],
-      admins: [],
-      subscriptions: [],
-      support: [],
-      calendar: [],
-      strategies: [],
-      books: [],
-      articles: [],
-      partners: [],
-      brokers: [],
-      news: [],
-      emails: [],
-      testimonials: []
-    };
+    // Initialize normalized permissions from config (auto-includes all modules)
+    const normalizedPermissions = Object.fromEntries(
+      Object.keys(PERMISSIONS_CONFIG).map(module => [module, []])
+    );
 
     // Process permissions based on user type
     if (req.auth.type === 'admin') {
       console.log('Processing admin permissions:', permissions);
-      
-      if (Array.isArray(permissions)) {
+
+      // Super admin gets all permissions
+      if (role === 'super_admin') {
+        Object.keys(normalizedPermissions).forEach(module => {
+          normalizedPermissions[module] = PERMISSIONS_CONFIG[module];
+        });
+      } else if (Array.isArray(permissions)) {
         permissions.forEach((perm) => {
           Object.entries(perm).forEach(([module, actions]) => {
-            if (normalizedPermissions[module] && Array.isArray(actions)) {
+            if (normalizedPermissions[module] !== undefined && Array.isArray(actions)) {
               normalizedPermissions[module] = actions;
             }
           });
