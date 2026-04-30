@@ -65,7 +65,7 @@ export const createExpertAdvisor = async (req, res) => {
     if (!validation.valid) return res.status(400).json({ error: validation.error });
 
     let coverImageUrl = req.body.coverImageUrl;
-    const imageFile = req.files?.find(f => f.fieldname === 'coverImage') || req.files?.[0];
+    const imageFile = req.files?.coverImage?.[0] || (Array.isArray(req.files) ? req.files[0] : null);
     if (imageFile) {
       coverImageUrl = await bunnycdn.uploadFile(imageFile.buffer, imageFile.originalname, 'expert-advisors');
     }
@@ -98,7 +98,7 @@ export const updateExpertAdvisor = async (req, res) => {
     const plans = parsePlans(req.body);
     const translations = parseTranslations(req.body);
 
-    const imageFile = req.files?.find(f => f.fieldname === 'coverImage') || req.files?.[0];
+    const imageFile = req.files?.coverImage?.[0] || (Array.isArray(req.files) ? req.files[0] : null);
     if (imageFile) {
       ea.coverImageUrl = await bunnycdn.uploadFile(imageFile.buffer, imageFile.originalname, 'expert-advisors');
     }
@@ -260,7 +260,7 @@ export const addUpdate = async (req, res) => {
     if (!ea) return res.status(404).json({ error: 'Expert advisor not found.' });
 
     let coverImageUrl = req.body.coverImageUrl;
-    const imageFile = req.files?.find(f => f.fieldname === 'coverImage') || req.files?.[0];
+    const imageFile = req.files?.coverImage?.[0] || (Array.isArray(req.files) ? req.files[0] : null);
     if (imageFile) {
       coverImageUrl = await bunnycdn.uploadFile(imageFile.buffer, imageFile.originalname, 'expert-advisors/updates');
     }
@@ -289,8 +289,8 @@ export const editUpdate = async (req, res) => {
     if (idx === -1) return res.status(404).json({ error: 'Update not found.' });
 
     if (req.files?.coverImage || req.files?.[0]) {
-      const file = req.files?.coverImage?.[0] || req.files?.[0];
-      ea.updates[idx].coverImageUrl = await bunnycdn.uploadFile(file.buffer, file.originalname, 'expert-advisors/updates');
+      const file = req.files?.coverImage?.[0] || (Array.isArray(req.files) ? req.files[0] : null);
+      if (file) ea.updates[idx].coverImageUrl = await bunnycdn.uploadFile(file.buffer, file.originalname, 'expert-advisors/updates');
     }
     if (req.body.date) ea.updates[idx].date = req.body.date;
     ea.updates[idx].updatedAt = new Date();
