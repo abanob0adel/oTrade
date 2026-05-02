@@ -229,8 +229,14 @@ export const getExpertAdvisorById = async (req, res) => {
     if (!ea.plans || ea.plans.length === 0)
       return res.status(200).json({ expertAdvisor: { ...base, locked: false } });
 
+    // Check if any of the required plans is free
+    const Plan = (await import('../plans/plan.model.js')).default;
+    const freePlan = await Plan.findOne({ _id: { $in: ea.plans }, isFree: true });
+    if (freePlan)
+      return res.status(200).json({ expertAdvisor: { ...base, locked: false } });
+
     if (!req.user)
-      return res.status(403).json({ error: 'Access denied', message: 'Subscription required.', expertAdvisor: { id: ea._id, title: t.title, locked: true } });
+      return res.status(403).json({ error: 'Access denied', message: 'Subscription required.', expertAdvisor: { id: ea._id, title: t.title, locked: true }, requiredPlans: ea.plans });
 
     if (isAdmin)
       return res.status(200).json({ expertAdvisor: { ...base, plans: ea.plans, locked: false } });
